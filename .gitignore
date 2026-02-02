@@ -1,0 +1,7 @@
+/target
+
+# Ignore the mockup
+project_mockup.*
+
+# No reason to push emtpy database
+scheduler.db
