@@ -62,7 +62,21 @@ impl FromStr for JobStatus {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+impl ToString for JobStatus {
+    
+    fn to_string(&self) -> String {
+        match self {
+            Self::PENDING => "PENDING".to_string(),
+            Self::RUNNING => "RUNNING".to_string(),
+            Self::COMPLETED => "COMPLETED".to_string(),
+            Self::FAILED => "FAILED".to_string(),
+            Self::CANCELED => "CANCELED".to_string(),
+            Self::RETRYING => "RETRYING".to_string()
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum Priority {
     HIGH = 0,
     MEDIUM = 1,
@@ -79,6 +93,16 @@ impl FromStr for Priority {
             "LOW" => Ok(Priority::LOW),
 
             _ => Err(())
+        }
+    }
+}
+
+impl ToString for Priority {
+    fn to_string(&self) -> String {
+        match self {
+            Self::LOW => "LOW".to_string(),
+            Self::MEDIUM => "MEDIUM".to_string(),
+            Self::HIGH => "HIGH".to_string()
         }
     }
 }

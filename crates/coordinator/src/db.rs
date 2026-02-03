@@ -56,13 +56,13 @@ pub fn insert_job(conn: &Connection, job: Job) -> Result<(), Error> {
             job.id.to_string(), 
             job.command, 
             serde_json::to_string(&job.args).unwrap(), 
-            format!("{:?}", job.status), 
+            job.status.to_string(), 
             job.timestamp.to_rfc3339(), 
 
             job.retry_count,
             job.max_retries,
 
-            format!("{:?}", job.priority),
+            job.priority.to_string(),
 
             job.schedule.unwrap_or_else(|| "None".to_string()),
             job.next_run.unwrap_or_else(|| Utc::now()).to_rfc3339(),
