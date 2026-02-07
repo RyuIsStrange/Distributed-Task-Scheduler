@@ -46,7 +46,7 @@ pub enum JobStatus {
 }
 
 impl FromStr for JobStatus {
-    type Err = ();
+    type Err = &'static str;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         match input {
@@ -57,7 +57,7 @@ impl FromStr for JobStatus {
             "CANCELED" => Ok(JobStatus::CANCELED),
             "RETRYING" => Ok(JobStatus::RETRYING),
 
-            _ => Err(())
+            _ => Err("Invalid Status")
         }
     }
 }
@@ -84,7 +84,7 @@ pub enum Priority {
 }
 
 impl FromStr for Priority {
-    type Err = ();
+    type Err = &'static str;
 
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         match input {
@@ -92,7 +92,7 @@ impl FromStr for Priority {
             "MEDIUM" => Ok(Priority::MEDIUM),
             "LOW" => Ok(Priority::LOW),
 
-            _ => Err(())
+            _ => Err("Invalid Priority")
         }
     }
 }
