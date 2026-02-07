@@ -1,17 +1,9 @@
 use common::{
     job::{
-        JobResult, 
-        JobStatus, 
-        Priority,
-        Job, 
+        Job, JobResult, JobStatus, Priority 
     }, 
     message::{
-        SubmitJobRequest, 
-        WorkerHeartbeat, 
-        NextJobRequest, 
-        WorkerRegister, 
-        WorkerStatus,
-        WorkerInfo, 
+        NextJobRequest, SubmitJobListRequest, SubmitJobRequest, WorkerHeartbeat, WorkerInfo, WorkerRegister, WorkerStatus 
     }
 };
 use actix_web::{
@@ -100,7 +92,9 @@ pub async fn submit_job(
 ) -> impl Responder {
     let mut q = queue.lock().await;
 
-    let (schedule, next_run, is_recurring) = if let Some(sched) = &req.schedule {
+    // TODO: replace `req.schedule.as_ref().map(|s| s.len() as u32) > Some(8)` with something more reliable
+    // ^ It currently will only work if schedule is something like "* * * * *" but if isn't a valid/full length cron expression it will cause issues
+    let (schedule, next_run, is_recurring) = if let Some(sched) = &req.schedule && req.schedule.as_ref().map(|s| s.len() as u32) > Some(8) {
         let cron_expr = if sched.split_whitespace().count() == 5 {
             format!("0 {}", sched)
         } else {
@@ -208,5 +202,20 @@ pub async fn job_details(
         }
     } else {
         HttpResponse::BadRequest().finish() // Can't parse Uuid/not valid Uuid? Return 400
+    }
+}
+
+pub async fn list_jobs(
+    req: web::Json<SubmitJobListRequest>,
+    queue: web::Data<Arc<Mutex<JobQueue>>>
+) -> impl Responder {
+    let q = queue.lock().await;
+    
+    let response = JobQueue::get_list(&q, req.status_search);
+
+    if response.is_ok() {
+        HttpResponse::Ok().json(response)
+    } else {
+        HttpResponse::BadRequest().finish()
     }
 }

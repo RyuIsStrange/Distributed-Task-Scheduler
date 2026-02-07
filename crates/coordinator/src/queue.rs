@@ -222,6 +222,12 @@ impl JobQueue {
         })
     }
 
+    pub fn get_list(&self, status: Option<JobStatus>) {
+        if status.is_some() {
+            
+        }
+    }
+
     pub fn retry_job(&mut self, job_id: Uuid) {
         if let Some(job) = self.jobs.get_mut(&job_id) {
             job.status = JobStatus::RETRYING;

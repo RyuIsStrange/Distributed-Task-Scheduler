@@ -171,3 +171,11 @@ pub fn load_pending_jobs(conn: &Connection) -> Result<Vec<Job>, Error> {
     
     result  
 }
+
+pub fn get_job_list(conn: &Connection, status: Option<JobStatus>) -> Result<Vec<Job>, Error> {
+    if status.is_some() {
+
+    };
+
+    todo!()
+}

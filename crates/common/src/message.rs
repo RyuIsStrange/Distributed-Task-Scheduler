@@ -9,9 +9,7 @@ use chrono::{
 use uuid::Uuid;
 
 use crate::job::{
-    JobResult, 
-    Priority,
-    Job, 
+    Job, JobResult, JobStatus, Priority 
 };
 
 // Client -> Coord 
@@ -35,6 +33,16 @@ pub struct SubmitJobResponse {
 pub struct GetJobStatusResponse {
     pub job: Job,
     pub result: Option<JobResult>
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SubmitJobListRequest {
+    pub status_search: Option<JobStatus>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GetJobListResponse {
+    pub status_search: Option<Vec<Job>>,
 }
 
 // Worker -> Coord
