@@ -100,7 +100,7 @@ pub async fn submit_job(
         let cron_expr = if sched.split_whitespace().count() == 5 {
             format!("0 {}", sched)
         } else {
-            sched.clone().clone()
+            sched.to_string()
         };
 
         let next = Schedule::from_str(&cron_expr)
