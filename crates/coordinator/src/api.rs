@@ -92,13 +92,15 @@ pub async fn submit_job(
 ) -> impl Responder {
     let mut q = queue.lock().await;
 
+    let sched = &req.schedule.as_ref().unwrap();
+
     // TODO: replace `req.schedule.as_ref().map(|s| s.len() as u32) > Some(8)` with something more reliable
     // ^ It currently will only work if schedule is something like "* * * * *" but if isn't a valid/full length cron expression it will cause issues
-    let (schedule, next_run, is_recurring) = if let Some(sched) = &req.schedule && req.schedule.as_ref().map(|s| s.len() as u32) > Some(8) {
+    let (schedule, next_run, is_recurring) = if req.schedule.as_ref().map(|s| s.len() as u32) > Some(8) {
         let cron_expr = if sched.split_whitespace().count() == 5 {
             format!("0 {}", sched)
         } else {
-            sched.clone()
+            sched.clone().clone()
         };
 
         let next = Schedule::from_str(&cron_expr)
@@ -211,10 +213,10 @@ pub async fn list_jobs(
 ) -> impl Responder {
     let q = queue.lock().await;
     
-    let response = JobQueue::get_list(&q, req.status_search);
+    let response = JobQueue::get_list(&q, req.status_search.clone());
 
     if response.is_ok() {
-        HttpResponse::Ok().json(response)
+        HttpResponse::Ok().json(response.unwrap())
     } else {
         HttpResponse::BadRequest().finish()
     }

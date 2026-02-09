@@ -222,10 +222,8 @@ impl JobQueue {
         })
     }
 
-    pub fn get_list(&self, status: Option<JobStatus>) {
-        if status.is_some() {
-            
-        }
+    pub fn get_list(&self, status: Option<JobStatus>) -> Result<Vec<Job>, rusqlite::Error> {
+        db::get_job_list(&self.connection, status)
     }
 
     pub fn retry_job(&mut self, job_id: Uuid) {
