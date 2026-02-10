@@ -42,7 +42,7 @@ pub struct SubmitJobListRequest {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GetJobListResponse {
-    pub status_search: Option<Vec<Job>>,
+    pub list: Option<Vec<Job>>,
 }
 
 // Worker -> Coord
