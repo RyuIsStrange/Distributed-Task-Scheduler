@@ -17,7 +17,17 @@ pub async fn jobs(input: Option<String>) {
     if status_search.is_ok() || input.is_none() {
         let list = client::fetch_list(status_search).await;
 
-        println!("{:#?}", list.unwrap().0)
+        if list.is_err() {
+            println!("{}", "An error has occurred.".red());
+            println!("Err printout: {:?}", list)
+        } else if !list.as_ref().unwrap().list.clone().unwrap().is_empty() {
+            println!("{:#?}", list.unwrap().list.unwrap())
+        } else if list.as_ref().unwrap().list.clone().unwrap().is_empty() {
+            println!("No jobs were found with search.")
+        } else {
+            println!("{}", "An error has occurred.".red());
+            println!("Err printout: {:?}", list)
+        }
     } else {
         println!("{}", "Invalid status search parameter".red());
     }

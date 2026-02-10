@@ -65,7 +65,7 @@ async fn main() -> Result<()> {
                     .route("/worker/register", web::post().to(api::register_worker))
                     .route("/worker/heartbeat", web::post().to(api::worker_heartbeat))
                     .route("/job", web::post().to(api::submit_job))
-                    .route("/job/list", web::get().to(api::list_jobs))
+                    .route("/job/list", web::post().to(api::list_jobs))
                     .route("/job/next", web::get().to(api::next_job))
                     .route("/job/{job_id}", web::get().to(api::job_details))
                     .route("/job/{job_id}/results", web::post().to(api::job_results))
