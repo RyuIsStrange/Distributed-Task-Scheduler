@@ -3,7 +3,7 @@ use common::{
         Job, JobResult, JobStatus, Priority 
     }, 
     message::{
-        NextJobRequest, SubmitJobListRequest, SubmitJobRequest, WorkerHeartbeat, WorkerInfo, WorkerRegister, WorkerStatus 
+        GetJobListResponse, NextJobRequest, SubmitJobListRequest, SubmitJobRequest, WorkerHeartbeat, WorkerInfo, WorkerRegister, WorkerStatus 
     }
 };
 use actix_web::{
@@ -92,22 +92,26 @@ pub async fn submit_job(
 ) -> impl Responder {
     let mut q = queue.lock().await;
 
-    let sched = &req.schedule.as_ref().unwrap();
-
     // TODO: replace `req.schedule.as_ref().map(|s| s.len() as u32) > Some(8)` with something more reliable
     // ^ It currently will only work if schedule is something like "* * * * *" but if isn't a valid/full length cron expression it will cause issues
-    let (schedule, next_run, is_recurring) = if req.schedule.as_ref().map(|s| s.len() as u32) > Some(8) {
-        let cron_expr = if sched.split_whitespace().count() == 5 {
-            format!("0 {}", sched)
-        } else {
-            sched.to_string()
-        };
+    #[allow(irrefutable_let_patterns)]
+    let (schedule, next_run, is_recurring) = if req.schedule.is_some() {
+        if let sched = req.schedule.as_ref().unwrap() && req.schedule.as_ref().map(|s| s.len() as u32) > Some(8) {
+            let cron_expr = if sched.split_whitespace().count() == 5 {
+                format!("0 {}", sched)
+            } else {
+                sched.to_string()
+            };
 
-        let next = Schedule::from_str(&cron_expr)
-            .ok()
-            .and_then(|s| s.upcoming(Utc).next());
-    
-        (Some(cron_expr), next, Some(true))
+            let next = Schedule::from_str(&cron_expr)
+                .ok()
+                .and_then(|s| s.upcoming(Utc).next());
+        
+            (Some(cron_expr), next, Some(true))
+        }
+        else {
+            (None, None, Some(false))
+        }
     } else {
         (None, None, Some(false))
     };
@@ -216,7 +220,7 @@ pub async fn list_jobs(
     let response = JobQueue::get_list(&q, req.status_search.clone());
 
     if response.is_ok() {
-        HttpResponse::Ok().json(response.unwrap())
+        HttpResponse::Ok().json(GetJobListResponse{ list: Some(response.unwrap())})
     } else {
         HttpResponse::BadRequest().finish()
     }
