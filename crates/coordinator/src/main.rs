@@ -24,8 +24,13 @@ async fn main() -> Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     log::info!("Initalizing database..");
-    let db = Connection::open("scheduler.db").unwrap();
-    let _ = db::init(&db);
+    let db_connection = Connection::open("scheduler.db").unwrap();
+    let _ = db::init(&db_connection);
+
+    let db_close = db_connection.close();
+    if db_close.is_err() {
+        log::error!("The DB connection failed to close after initialization");
+    }
 
     let queue = Arc::new(Mutex::new(JobQueue::new()));
     
