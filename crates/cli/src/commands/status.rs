@@ -78,7 +78,6 @@ pub async fn fetch(id: String) {
             },
 
             if job_status.job.is_recurring.unwrap() {
-                println!("{}", job_status.job.schedule.as_ref().unwrap());
                 format!("Schedule Info: \n\tSchedule: {} \n\tRecurring: {} \n\tNext run time {}", 
                     job_status.job.schedule.unwrap(), 
                     job_status.job.is_recurring.unwrap(), 
