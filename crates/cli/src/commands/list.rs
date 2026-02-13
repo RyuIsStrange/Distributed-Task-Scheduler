@@ -24,9 +24,6 @@ pub async fn jobs(input: Option<String>) {
             println!("{:#?}", list.unwrap().list.unwrap())
         } else if list.as_ref().unwrap().list.clone().unwrap().is_empty() {
             println!("No jobs were found with search.")
-        } else {
-            println!("{}", "An error has occurred.".red());
-            println!("Err printout: {:?}", list)
         }
     } else {
         println!("{}", "Invalid status search parameter".red());
