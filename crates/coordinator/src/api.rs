@@ -92,12 +92,16 @@ pub async fn submit_job(
 ) -> impl Responder {
     let mut q = queue.lock().await;
 
-    // TODO: replace `req.schedule.as_ref().map(|s| s.len() as u32) > Some(8)` with something more reliable
-    // ^ It currently will only work if schedule is something like "* * * * *" but if isn't a valid/full length cron expression it will cause issues
     #[allow(irrefutable_let_patterns)]
     let (schedule, next_run, is_recurring) = if req.schedule.is_some() {
-        if let sched = req.schedule.as_ref().unwrap() && req.schedule.as_ref().map(|s| s.len() as u32) > Some(8) {
-            let cron_expr = if sched.split_whitespace().count() == 5 {
+        let valid_sched = Schedule::from_str(&req.schedule.clone().unwrap());
+        
+        let five_sched = if req.schedule.as_ref().unwrap().split_whitespace().count() == 5 {
+            Schedule::from_str(&format!("0 {}", &req.schedule.clone().unwrap())).is_ok()
+        } else { false };
+
+        if let sched = req.schedule.as_ref().unwrap() && (valid_sched.is_ok() || five_sched) {
+            let cron_expr = if five_sched {
                 format!("0 {}", sched)
             } else {
                 sched.to_string()
