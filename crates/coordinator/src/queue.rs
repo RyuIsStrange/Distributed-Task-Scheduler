@@ -90,32 +90,38 @@ impl JobQueue {
     }
 
     pub fn check_worker(&mut self) {
-        for (worker_id, worker_info) in self.workers.clone() {
-            let last_beat = Utc::now() - worker_info.last_seen;
-            
-            if last_beat > Duration::seconds(60) && worker_info.status == WorkerStatus::ALIVE {
-                let recover_job_id = worker_info.current_job_id;
+        let dead_workers: Vec<_> = self.workers.iter()
+            .filter_map(|(id, info)| {
+                let last_beat = Utc::now() - info.last_seen;
 
-                if let Some(w) = self.workers.get_mut(&worker_id) {
-                    w.status = WorkerStatus::DEAD;
-                    w.current_job_id = None;
-                }
-
-                if let Some(job_id) = recover_job_id {
-                    if let Some(j) = self.get_job(job_id) {
-                        match j.priority {
-                            Priority::HIGH => self.pending_high.push_back(j.clone()),
-                            Priority::MEDIUM => self.pending_medium.push_back(j.clone()),
-                            Priority::LOW => self.pending_low.push_back(j.clone()),
-                        }
-                        self.update_job_status(j.id, JobStatus::PENDING);
-                        
-                        log::error!("Worker {} is dead, recovered job id: {}", worker_id, job_id);
-                    }
+                if last_beat > Duration::seconds(60) && info.status == WorkerStatus::ALIVE {
+                    Some((*id, info.current_job_id))
                 } else {
-                    log::warn!("Worker {} heartbeat too old, marking as dead", worker_id);
+                    None
                 }
-            } 
+            })
+            .collect();
+
+        for (worker_id, recovered_job_option) in dead_workers {
+            if let Some(w) = self.workers.get_mut(&worker_id) {
+                w.status = WorkerStatus::DEAD;
+                w.current_job_id = None;
+            }
+
+            if let Some(job_id) = recovered_job_option {
+                if let Some(j) = self.get_job(job_id) {
+                    match j.priority {
+                        Priority::HIGH => self.pending_high.push_back(j.clone()),
+                        Priority::MEDIUM => self.pending_medium.push_back(j.clone()),
+                        Priority::LOW => self.pending_low.push_back(j.clone()),
+                    }
+                    self.update_job_status(j.id, JobStatus::PENDING);
+                    
+                    log::warn!("Worker {} is dead, recovered job id: {}", worker_id, job_id);
+                }
+            } else {
+                log::warn!("Worker {} heartbeat too old, marking as dead", worker_id);
+            }
         }
     }
 
