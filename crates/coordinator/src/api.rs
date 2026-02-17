@@ -164,7 +164,7 @@ pub async fn job_results(
     path: web::Path<String>,
     queue: web::Data<Arc<Mutex<JobQueue>>>
 ) -> impl Responder {
-    let job_id = Uuid::parse_str(&path.into_inner()).expect("Err");
+    let job_id = Uuid::parse_str(&path.into_inner()).expect("Error with parsing UUID");
     let mut q = queue.lock().await;
     let job = JobQueue::get_job(&mut q, job_id.clone());
 
