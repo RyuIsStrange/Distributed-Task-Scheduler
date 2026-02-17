@@ -94,13 +94,15 @@ pub async fn submit_job(
 
     #[allow(irrefutable_let_patterns)]
     let (schedule, next_run, is_recurring) = if req.schedule.is_some() {
-        let valid_sched = Schedule::from_str(&req.schedule.clone().unwrap());
+        let req_sched = req.schedule.clone().unwrap();
+
+        let valid_sched = Schedule::from_str(&req_sched);
         
-        let five_sched = if req.schedule.as_ref().unwrap().split_whitespace().count() == 5 {
-            Schedule::from_str(&format!("0 {}", &req.schedule.clone().unwrap())).is_ok()
+        let five_sched = if req_sched.split_whitespace().count() == 5 {
+            Schedule::from_str(&format!("0 {}", &req_sched)).is_ok()
         } else { false };
 
-        if let sched = req.schedule.as_ref().unwrap() && (valid_sched.is_ok() || five_sched) {
+        if let sched = req_sched && (valid_sched.is_ok() || five_sched) {
             let cron_expr = if five_sched {
                 format!("0 {}", sched)
             } else {
