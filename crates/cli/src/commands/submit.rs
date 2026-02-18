@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
-use common::{job::Priority, message::SubmitJobRequest};
+use colored::Colorize;
+use common::{job::{Job, Priority}, message::SubmitJobRequest};
 
 use crate::client;
 
@@ -14,14 +15,33 @@ pub async fn job(command: String, args_str: Option<String>, priority: Option<Str
         }
     }
 
+    let unwrap_priority;
+    let p: Option<Priority>;
+    if priority.is_some() {
+        unwrap_priority = priority.unwrap().to_uppercase();
+
+        if Priority::from_str(&unwrap_priority).is_err() {
+            println!("Invalid priority value, must be one of the following: Low, Medium, High");
+            return;
+        } else {
+            p = Priority::from_str(&unwrap_priority).ok();
+        }
+    } else {
+        p = Some(Priority::LOW);
+    }
+
     let json = SubmitJobRequest {
         command: command,
         args: args,
-        priority: Some(Priority::from_str(&priority.unwrap_or("LOW".to_string())).unwrap()),
+        priority: p,
         schedule: schedule
     };
 
     let result = client::submit_job(json).await;
 
-    println!("Result: {:#?}", result);
+    if result.is_ok() {
+        println!("Job submited with ID: {}", result.unwrap().json::<Job>().await.unwrap().id);
+    } else {
+        println!("{} Job failed to be submited.", "Err:".red());
+    }
 }
