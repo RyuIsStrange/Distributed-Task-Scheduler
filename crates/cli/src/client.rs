@@ -1,5 +1,5 @@
 use common::{job::JobStatus, message::{GetJobListResponse, GetJobStatusResponse, SubmitJobListRequest, SubmitJobRequest}};
-use reqwest::{Error, Response, StatusCode};
+use reqwest::{Error, Response};
 
 const COORDINATOR_ADDR: &str = "127.0.0.1:8080";
 
@@ -13,16 +13,16 @@ pub async fn submit_job(submit_request: SubmitJobRequest) -> Result<Response, Er
     post
 }
 
-pub async fn fetch_status(id: String) -> Result<(GetJobStatusResponse, StatusCode), Error> {
+pub async fn fetch_status(id: String) -> Result<GetJobStatusResponse, Error> {
     let url = format!("http://{}/api/job/{}", COORDINATOR_ADDR, id);
 
     let response = reqwest::get(&url).await?;
 
-    let status = response.status();
+    // let status = response.status();
 
     let json = response.json::<GetJobStatusResponse>().await?;
 
-    Ok((json, status))
+    Ok(json)
 }
 
 pub async fn fetch_list(status_search: Result<JobStatus, &str>) -> Result<GetJobListResponse, Error> {
