@@ -20,10 +20,14 @@ pub async fn jobs(input: Option<String>) {
         if list.is_err() {
             println!("{}", "An error has occurred.".red());
             println!("Err printout: {:?}", list)
-        } else if !list.as_ref().unwrap().list.clone().unwrap().is_empty() {
-            println!("{:#?}", list.unwrap().list.unwrap())
-        } else if list.as_ref().unwrap().list.clone().unwrap().is_empty() {
-            println!("No jobs were found with search.")
+        } else {
+            let list_unwrap = list.unwrap().list.unwrap();
+            
+            if !list_unwrap.is_empty() {
+                println!("{:#?}", list_unwrap)
+            } else {
+                println!("No jobs were found with search.")
+            }
         }
     } else {
         println!("{}", "Invalid status search parameter".red());
