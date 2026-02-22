@@ -25,17 +25,12 @@ pub async fn fetch_status(id: String) -> Result<GetJobStatusResponse, Error> {
     Ok(json)
 }
 
-pub async fn fetch_list(status_search: Result<JobStatus, &str>) -> Result<GetJobListResponse, Error> {
+pub async fn fetch_list(status_search: Option<JobStatus>) -> Result<GetJobListResponse, Error> {
     let url = format!("http://{}/api/job/list", COORDINATOR_ADDR);
 
     let client = reqwest::Client::new();
 
-    let response;
-    if status_search.is_ok() {
-        response = client.post(&url).json(&SubmitJobListRequest { status_search: Some(status_search.unwrap())}).send().await?;
-    } else {
-        response = client.post(&url).json(&SubmitJobListRequest { status_search: None}).send().await?;
-    }
+    let response = client.post(&url).json(&SubmitJobListRequest { status_search }).send().await?;
 
     let json = response.json::<GetJobListResponse>().await?;
 
