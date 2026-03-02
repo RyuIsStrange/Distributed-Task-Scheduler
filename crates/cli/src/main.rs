@@ -39,6 +39,8 @@ enum Commands {
     },
 }
 
+// TODO: Make error prompting in CLI more then "Error has occurred" and to parse the error and inform the user what caused it.
+
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
