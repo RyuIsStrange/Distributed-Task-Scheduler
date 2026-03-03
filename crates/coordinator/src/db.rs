@@ -111,13 +111,6 @@ pub fn update_retry_count(conn: &Connection, job_id: Uuid, count: u32) -> Result
 }
 
 pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec<Job>, Error> {
-    // let param ;
-    // if status.is_some() {
-    //     param = params![status.unwrap().to_string()];
-    // } else {
-    //     param = params![];
-    // }
-
     let (mut stmt, param) = if let Some(s) = status {
         (conn.prepare(
             "SELECT id, command, args, status, timestamp, retry_count, max_retries, priority, schedule, is_recurring, next_run, parent_schedule_id
@@ -191,19 +184,15 @@ pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec
 pub fn load_pending_jobs(conn: &Connection) -> Result<Vec<Job>, Error> {
     let pending = fetch_from_db(conn, Some(JobStatus::PENDING));
     let running = fetch_from_db(conn, Some(JobStatus::RUNNING));
-    
-    let result: Result<Vec<Job>, Error> ;
 
     if pending.is_ok() && running.is_ok() {
-        result = Ok([pending.unwrap(), running.unwrap()].concat());
-    } else if pending.is_err() && running.is_ok() {
-        result = running;
+        Ok([pending.unwrap(), running.unwrap()].concat())
+    } else if running.is_ok() {
+        running
     } else {
-        result = pending;
+        pending
     }
 
-    
-    result   
 }
 
 pub fn get_job_list(conn: &Connection, status: Option<JobStatus>) -> Result<Vec<Job>, Error> {
