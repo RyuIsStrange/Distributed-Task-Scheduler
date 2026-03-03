@@ -1,0 +1,80 @@
+# Distributed Task Scheduler / Job Queue
+
+## Overview
+This is a distributed job scheduling system that allows you to submit, queue, and execute tasks across multiple worker nodes.
+
+## Why I made this
+I wanted to expand on skills that I have and wanted to make a proof of concept that is "Production Ready".
+
+I put production ready in quotes as I am sure there are many things within this that wouldn't work or function well in a production environment.
+
+However with this I have learned many things such as message design, database integration, job persistence and state management, and more.
+
+I started this project ~1/5/26 and I am still working on this today.
+
+## Technology Used
+**Backend/Coordinator:**
+- **Actix-web** - HTTP server for the REST API
+- **Tokio** - Async runtime for handling concurrent operations (worker checks, scheduled job polling, HTTP server)
+- **rusqlite** - SQLite database for job persistence
+- **cron** - Parsing and scheduling cron expressions
+- **uuid** - Unique job identification
+- **serde/serde_json** - JSON serialization
+
+**Worker:**
+- **Tokio** - Async runtime for job execution
+- **reqwest** - Communication with coordinator (job polling, heartbeats, results)
+- **tokio::process** - For executing shell commands/jobs
+
+**CLI:**
+- **Clap** (v4) - Command-line argument parsing with derive API
+- **reqwest** - HTTP client for communicating with the coordinator
+- **colored** - Pretty terminal output with colors for status indicators
+
+**Shared:**
+- **chrono** - Date/time handling
+- **env_logger** - Logging across components
+
+### What is new to me in this project?
+- Large scale async with Tokio.
+- Using SQLite or SQL in general.
+- Cron as a whole.
+- Clap for CLI commands.
+- Chrono for life times of workers/ect.
+
+## What am I working on?
+Job Dependencies - Queue jobs that wait for another to complete.
+
+## What Works
+
+**Job Management:**
+- Submit, track, and retrieve results for jobs
+- Three priority levels (High/Medium/Low)
+- Retry failed jobs automatically (up to 3 times, configurable)
+- Everything persists to SQLite
+
+**Scheduling:**
+- Cron syntax for recurring jobs
+- Supports standard 5-field and extended 6-field expressions
+- Scheduled jobs spawn regular jobs automatically
+
+**Distributed Workers:**
+- Multiple workers can pull jobs from the coordinator
+- Heartbeat monitoring detects dead workers
+- Jobs get recovered and re-queued if a worker dies
+
+**CLI:**
+- Submit jobs with `scheduler submit <command> --args "..." --priority <level> --schedule "cron expr"`
+- Check status with `scheduler status <job-id>`
+- List jobs with `scheduler list --status <filter>`
+- Colored output to help visualize things.
+
+### Whats next?
+
+CLI & DB Error Handling - Make errors easier for CLI clients to read, and make DB error less likely to malform or corrupt the DB
+
+Rate Limiting & Throttling - To control job execution rate per worker or job type and to limit job submissions and status request.
+
+Metrics & Monitoring - Just a better way to view system health and performance.
+
+CLI Refactor - Support for the above todo features.
