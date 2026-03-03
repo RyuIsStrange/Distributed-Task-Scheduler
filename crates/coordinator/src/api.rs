@@ -164,35 +164,40 @@ pub async fn job_results(
     path: web::Path<String>,
     queue: web::Data<Arc<Mutex<JobQueue>>>
 ) -> impl Responder {
-    let job_id = Uuid::parse_str(&path.into_inner()).expect("Error with parsing UUID");
+    let job_id = Uuid::parse_str(&path.into_inner());
     let mut q = queue.lock().await;
-    let job = JobQueue::get_job(&mut q, job_id.clone());
+    
+    if let Ok(id) = job_id {
+        let job = JobQueue::get_job(&mut q, id);
 
-    let results = JobResult {
-        exitcode: req.exitcode,
-        stdout: req.stdout.clone(),
-        stderr: req.stderr.clone()
-    };
+        let results = JobResult {
+            exitcode: req.exitcode,
+            stdout: req.stdout.clone(),
+            stderr: req.stderr.clone()
+        };
 
-    // Debug
-    log::info!("A new result has been submitted Job ID: {}, Results: {:?}", job_id.clone(), results.clone());
+        // Debug
+        log::info!("A new result has been submitted Job ID: {}, Results: {:?}", id, &results);
 
-    if results.exitcode != 0 && job.is_some() {
-        let j = job.unwrap();
-        if j.retry_count < j.max_retries {
-            JobQueue::retry_job(&mut q, job_id);
-            log::error!("Job ID: {} has failed and is being retried.", job_id);
+        if results.exitcode != 0 && job.is_some() {
+            let j = job.unwrap();
+            if j.retry_count < j.max_retries {
+                JobQueue::retry_job(&mut q, id);
+                log::error!("Job ID: {} has failed and is being retried.", id);
+            } else {
+                JobQueue::store_results(&mut q, id, results.clone());
+                JobQueue::update_job_status(&mut q, id, JobStatus::FAILED);
+                log::error!("Job ID: {} has failed after max retries.", id);
+            }
         } else {
-            JobQueue::store_results(&mut q, job_id, results.clone());
-            JobQueue::update_job_status(&mut q, job_id, JobStatus::FAILED);
-            log::error!("Job ID: {} has failed after max retries.", job_id);
+            JobQueue::store_results(&mut q, id, results.clone());
+            JobQueue::update_job_status(&mut q, id, JobStatus::COMPLETED);
         }
-    } else {
-        JobQueue::store_results(&mut q, job_id, results.clone());
-        JobQueue::update_job_status(&mut q, job_id, JobStatus::COMPLETED);
-    }
 
-    HttpResponse::Ok().json(results)
+        HttpResponse::Ok().json(results)
+    } else {
+        HttpResponse::BadRequest().finish()
+    }
 }
 
 pub async fn job_details(
@@ -203,8 +208,7 @@ pub async fn job_details(
 
     let id = path.into_inner();
 
-    if Uuid::parse_str(&id).is_ok() {
-        let job_id = Uuid::parse_str(&id).unwrap();
+    if let Ok(job_id) = Uuid::parse_str(&id) {
         let details = JobQueue::get_job_status(&mut q, job_id);
 
         if details.is_some() {
