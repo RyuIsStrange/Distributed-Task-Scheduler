@@ -39,8 +39,11 @@ pub async fn job(command: String, args_str: Option<String>, priority: Option<Str
 
     let result = client::submit_job(json).await;
 
-    if result.is_ok() {
-        println!("Job submited with ID: {}", result.unwrap().json::<Job>().await.unwrap().id);
+    if let Ok(r) = result {
+        match r.json::<Job>().await {
+            Ok(json) => println!("Job submited with ID: {}", json.id),
+            Err(_) => println!("{} Job was submited but failed to generate JSON response.", "Err:".red())
+        }
     } else {
         println!("{} Job failed to be submited.", "Err:".red());
     }
