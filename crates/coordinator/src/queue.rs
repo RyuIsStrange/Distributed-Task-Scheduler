@@ -170,8 +170,6 @@ impl JobQueue {
                         let next = Schedule::from_str(&j.schedule.clone().unwrap())
                             .ok()
                             .and_then(|s| s.upcoming(Utc).next());
-                        
-                        log::info!("New run time {}", next.unwrap());
 
                         if let Some(next_time) = next {
                             log::info!("New run time {}", next_time);
@@ -200,25 +198,21 @@ impl JobQueue {
             .or_else(|| self.pending_medium.pop_front())
             .or_else(|| self.pending_low.pop_front());
         
-        if job.is_some() {
-            self.update_job_status(job.clone().unwrap().id, JobStatus::RUNNING);
+        if let Some(j) = &job {
+            self.update_job_status(j.id, JobStatus::RUNNING);
             
             if let Some(worker) = self.workers.get_mut(&requester) {
-                worker.current_job_id = Some(job.clone().unwrap().id);
+                worker.current_job_id = Some(j.id);
             }
 
-            db::update_job_status(&self.connection, job.clone().unwrap().id, JobStatus::RUNNING).unwrap();
+            db::update_job_status(&self.connection, j.id, JobStatus::RUNNING).unwrap();
         }
         
         job
     }
 
     pub fn get_job(&self, job_id: Uuid) -> Option<Job> {
-        if self.jobs.get(&job_id).cloned().is_some() {
-            self.jobs.get(&job_id).cloned()
-        } else {
-            self.schedules.get(&job_id).cloned()
-        }
+        self.jobs.get(&job_id).cloned().or_else(|| self.schedules.get(&job_id).cloned())
     }
 
     pub fn get_job_status(&self, job_id: Uuid) -> Option<GetJobStatusResponse> {
@@ -237,8 +231,8 @@ impl JobQueue {
             job.status = JobStatus::RETRYING;
             job.retry_count += 1;
 
-            db::update_job_status(&self.connection, job_id.clone(), JobStatus::RETRYING).unwrap();
-            db::update_retry_count(&self.connection, job_id.clone(), job.retry_count).unwrap();
+            db::update_job_status(&self.connection, job_id, JobStatus::RETRYING).unwrap();
+            db::update_retry_count(&self.connection, job_id, job.retry_count).unwrap();
 
             match job.priority {
                 Priority::HIGH => self.pending_high.push_back(job.clone()),
@@ -250,14 +244,14 @@ impl JobQueue {
 
     pub fn update_job_status(&mut self, job_id: Uuid, status: JobStatus) {
         if let Some(job) = self.jobs.get_mut(&job_id) {
-            db::update_job_status(&self.connection, job_id.clone(), status.clone()).unwrap();
+            db::update_job_status(&self.connection, job_id, status.clone()).unwrap();
             job.status = status;
         }
     }
 
     pub fn store_results(&mut self, job_id: Uuid, job_results: JobResult) {
         // update job queue with results
-        db::insert_results(&self.connection, job_id.clone(), job_results.clone()).unwrap();
+        db::insert_results(&self.connection, job_id, job_results.clone()).unwrap();
         self.results.insert(job_id, job_results);
     }
 }
