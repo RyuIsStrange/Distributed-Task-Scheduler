@@ -56,7 +56,7 @@ impl JobQueue {
         let jobs = db::load_pending_jobs(&queue.connection).unwrap();
         
         for job in jobs {
-            if job.is_recurring.unwrap() {
+            if job.is_recurring {
                 queue.schedules.insert(job.id, job.clone());
                 log::info!("Loading schedule into HashMap: id={}, schedule={:?}", job.id, job.schedule);
             } else {
@@ -158,14 +158,14 @@ impl JobQueue {
 
                         schedule: None,
                         next_run: None,
-                        is_recurring: None
+                        is_recurring: false
                     };
 
 
                     self.add_job(sched_job);
                 }
 
-                if jobs.is_recurring.unwrap() {
+                if jobs.is_recurring {
                     if let Some(j) = self.schedules.get_mut(&job_id) {
                         let next = Schedule::from_str(&j.schedule.clone().unwrap())
                             .ok()

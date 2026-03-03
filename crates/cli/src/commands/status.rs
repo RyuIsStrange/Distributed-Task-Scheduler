@@ -58,7 +58,7 @@ pub async fn fetch(id: String) {
                     result.stdout.white(), 
                     result.stderr.red()
                 )
-            } else if job_status_resp.job.is_recurring.unwrap() {
+            } else if job_status_resp.job.is_recurring {
                 format!("{}",
                     "Schedule jobs wont have results, find one if its spawned jobs.".blue()
                 )
@@ -70,16 +70,16 @@ pub async fn fetch(id: String) {
 
             if let Some(p_id) = job_status_resp.job.parent_schedule_id {
                 p_id.to_string().green()
-            } else if job_status_resp.job.is_recurring.unwrap() { 
+            } else if job_status_resp.job.is_recurring { 
                 "Scheduled job cannot have parent".to_string().blue()
             }else {
                 "This job has no scheduled job parent".to_string().white()
             },
 
-            if job_status_resp.job.is_recurring.unwrap() {
+            if job_status_resp.job.is_recurring {
                 format!("Schedule Info: \n\tSchedule: {} \n\tRecurring: {} \n\tNext run time {}", 
                     if let Some(sched) = job_status_resp.job.schedule {sched} else {"No schedule".to_string()}, 
-                    if let Some(recurr) = job_status_resp.job.is_recurring {recurr} else {false}, 
+                    job_status_resp.job.is_recurring,
                     if let Some(next) = job_status_resp.job.next_run {next.to_string()} else {"No next run".to_string()}
                 ).green()
             } else {

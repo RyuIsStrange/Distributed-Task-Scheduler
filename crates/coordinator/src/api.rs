@@ -113,13 +113,13 @@ pub async fn submit_job(
                 .ok()
                 .and_then(|s| s.upcoming(Utc).next());
         
-            (Some(cron_expr), next, Some(true))
+            (Some(cron_expr), next, true)
         }
         else {
-            (None, None, Some(false))
+            (None, None, false)
         }
     } else {
-        (None, None, Some(false))
+        (None, None, false)
     };
 
     let job = Job {
@@ -141,7 +141,7 @@ pub async fn submit_job(
     };
 
 
-    if is_recurring == Some(true) {
+    if is_recurring {
         log::info!("New scheduled job added. Job info: id: {:?}, cmd: {:?}, args: {:?}", job.id, job.command, job.args);
         JobQueue::add_scheduled_jobs(&mut q, job.clone());
     } else {

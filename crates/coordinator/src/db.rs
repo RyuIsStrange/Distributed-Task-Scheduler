@@ -65,7 +65,7 @@ pub fn insert_job(conn: &Connection, job: Job) -> Result<(), Error> {
 
             job.schedule.unwrap_or_else(|| "None".to_string()),
             job.next_run.unwrap_or_else(|| Utc::now()).to_rfc3339(),
-            job.is_recurring.unwrap_or(false),
+            job.is_recurring,
             job.parent_schedule_id.map(|id| id.to_string())
         ),
     )?;
@@ -170,7 +170,7 @@ pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec
             priority: Priority::from_str(&priority).unwrap(),
 
             schedule,
-            is_recurring: Some(is_recurring),
+            is_recurring: is_recurring,
             next_run,
             parent_schedule_id: p_id
         })
