@@ -48,15 +48,15 @@ pub async fn fetch(id: String) {
 
             job_status_resp.job.timestamp.to_utc().to_string().blue(),
 
-            if job_status_resp.result.is_some() {
+            if let Some(result) = job_status_resp.result {
                 format!("Results: \n\tExit Code: {} \n\tOutput: {} \n\tError: {}", 
-                    if job_status_resp.result.clone().unwrap().exitcode == 0 {
-                        job_status_resp.result.clone().unwrap().exitcode.to_string().green()
+                    if result.exitcode == 0 {
+                        result.exitcode.to_string().green()
                     } else {
-                        job_status_resp.result.clone().unwrap().exitcode.to_string().red()
+                        result.exitcode.to_string().red()
                     }, 
-                    job_status_resp.result.clone().unwrap().stdout.white(), 
-                    job_status_resp.result.unwrap().stderr.red()
+                    result.stdout.white(), 
+                    result.stderr.red()
                 )
             } else if job_status_resp.job.is_recurring.unwrap() {
                 format!("{}",
@@ -68,19 +68,19 @@ pub async fn fetch(id: String) {
                 )
             },
 
-            if job_status_resp.job.parent_schedule_id.is_some() {
-                job_status_resp.job.parent_schedule_id.unwrap().to_string().green()
+            if let Some(p_id) = job_status_resp.job.parent_schedule_id {
+                p_id.to_string().green()
             } else if job_status_resp.job.is_recurring.unwrap() { 
-                "Scheduled job".to_string().blue()
+                "Scheduled job cannot have parent".to_string().blue()
             }else {
                 "This job has no scheduled job parent".to_string().white()
             },
 
             if job_status_resp.job.is_recurring.unwrap() {
                 format!("Schedule Info: \n\tSchedule: {} \n\tRecurring: {} \n\tNext run time {}", 
-                    job_status_resp.job.schedule.unwrap(), 
-                    job_status_resp.job.is_recurring.unwrap(), 
-                    job_status_resp.job.next_run.unwrap()
+                    if let Some(sched) = job_status_resp.job.schedule {sched} else {"No schedule".to_string()}, 
+                    if let Some(recurr) = job_status_resp.job.is_recurring {recurr} else {false}, 
+                    if let Some(next) = job_status_resp.job.next_run {next.to_string()} else {"No next run".to_string()}
                 ).green()
             } else {
                 "This job isn't a scheduled job".to_string().white()
