@@ -1,12 +1,12 @@
 use std::str::FromStr;
-
+use uuid::Uuid;
 use colored::Colorize;
 use common::{job::{Job, Priority}, message::SubmitJobRequest};
 
 use crate::client;
 
 
-pub async fn job(command: String, args_str: Option<String>, priority: Option<String>, schedule: Option<String>) {
+pub async fn job(command: String, args_str: Option<String>, priority: Option<String>, schedule: Option<String>, depends_on: Option<Uuid>) {
     let mut args = vec![];
 
     if args_str.is_some() {
@@ -34,7 +34,8 @@ pub async fn job(command: String, args_str: Option<String>, priority: Option<Str
         command: command,
         args: args,
         priority: p,
-        schedule: schedule
+        schedule: schedule,
+        dependent: depends_on
     };
 
     let result = client::submit_job(json).await;

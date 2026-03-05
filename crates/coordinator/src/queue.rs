@@ -158,7 +158,9 @@ impl JobQueue {
 
                         schedule: None,
                         next_run: None,
-                        is_recurring: false
+                        is_recurring: false,
+
+                        depends_on: None // Might just put the parent ID here as it "depends" on the parent to be running but the parent isn't required for it or smth
                     };
 
 

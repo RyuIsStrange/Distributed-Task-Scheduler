@@ -25,7 +25,9 @@ pub struct Job {
     pub schedule: Option<String>,
     pub next_run: Option<DateTime<Utc>>,
     pub is_recurring: bool,
-    pub parent_schedule_id: Option<Uuid>
+    pub parent_schedule_id: Option<Uuid>,
+
+    pub depends_on: Option<Uuid>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

@@ -122,6 +122,12 @@ pub async fn submit_job(
         (None, None, false)
     };
 
+    let depend = if req.dependent.is_some() {
+        req.dependent
+    } else {
+        None
+    };
+
     let job = Job {
         id: Uuid::new_v4(),
         command: req.command.clone(),
@@ -137,7 +143,9 @@ pub async fn submit_job(
         schedule,
         next_run,
         is_recurring,
-        parent_schedule_id: None
+        parent_schedule_id: None,
+
+        depends_on: depend
     };
 
 

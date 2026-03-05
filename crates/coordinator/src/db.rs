@@ -28,7 +28,9 @@ pub fn init(conn: &Connection) -> Result<(), Error> {
             schedule TEXT,
             next_run TIMESTAMP,
             is_recurring BOOL,
-            parent_schedule_id UUID
+            parent_schedule_id UUID,
+
+            depends_on UUID
         );",
         ()
     )?;
@@ -49,8 +51,8 @@ pub fn init(conn: &Connection) -> Result<(), Error> {
 
 pub fn insert_job(conn: &Connection, job: Job) -> Result<(), Error> {
     conn.execute(
-        "INSERT INTO jobs (id, command, args, status, timestamp, retry_count, max_retries, priority, schedule, next_run, is_recurring, parent_schedule_id) 
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)", 
+        "INSERT INTO jobs (id, command, args, status, timestamp, retry_count, max_retries, priority, schedule, next_run, is_recurring, parent_schedule_id, depends_on) 
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)", 
         (
             job.id.to_string(), 
             job.command, 
@@ -66,7 +68,9 @@ pub fn insert_job(conn: &Connection, job: Job) -> Result<(), Error> {
             job.schedule.unwrap_or_else(|| "None".to_string()),
             job.next_run.unwrap_or_else(|| Utc::now()).to_rfc3339(),
             job.is_recurring,
-            job.parent_schedule_id.map(|id| id.to_string())
+            job.parent_schedule_id.map(|id| id.to_string()),
+
+            job.depends_on.unwrap_or_else(|| job.id).to_string()
         ),
     )?;
 
@@ -113,14 +117,14 @@ pub fn update_retry_count(conn: &Connection, job_id: Uuid, count: u32) -> Result
 pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec<Job>, Error> {
     let (mut stmt, param) = if let Some(s) = status {
         (conn.prepare(
-            "SELECT id, command, args, status, timestamp, retry_count, max_retries, priority, schedule, is_recurring, next_run, parent_schedule_id
+            "SELECT id, command, args, status, timestamp, retry_count, max_retries, priority, schedule, is_recurring, next_run, parent_schedule_id, depends_on
             FROM jobs 
             WHERE status IN (?1)
             ORDER BY timestamp ASC"
         )?, params![s.to_string()])
     } else {
         (conn.prepare(
-            "SELECT id, command, args, status, timestamp, retry_count, max_retries, priority, schedule, is_recurring, next_run, parent_schedule_id
+            "SELECT id, command, args, status, timestamp, retry_count, max_retries, priority, schedule, is_recurring, next_run, parent_schedule_id, depends_on
             FROM jobs 
             ORDER BY timestamp ASC"
         )?, params![])
@@ -142,6 +146,9 @@ pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec
         let is_recurring: bool = row.get(9)?;
         let next_run_str: Option<String> = Some(row.get(10)?);
         let parent_id: Option<String> = row.get(11)?;
+
+        let depends_on: Option<String> = row.get(12)?;
+
         
         // TODO: Better error handling in unwraps (ex: id: Uuid::from_str(...).map_err(|_| Error::InvalidColumnType(...
         // Or Leave it, however it would be nice incase if something corrupts or becomes malformed 
@@ -155,6 +162,13 @@ pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec
                 next_run_str.and_then(|s| DateTime::parse_from_rfc3339(&s).ok().map(|dt| dt.into())),
                 parent_id.and_then(|s| Uuid::from_str(&s).ok())
             )
+        };
+
+        // Should see if I can save none if posible so I can just check as none
+        let depends = if depends_on == Some(id_str.clone()) {
+            None
+        } else {
+            Some(Uuid::from_str(&depends_on.unwrap()).unwrap())
         };
 
         Ok(Job { 
@@ -172,7 +186,9 @@ pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec
             schedule,
             is_recurring: is_recurring,
             next_run,
-            parent_schedule_id: p_id
+            parent_schedule_id: p_id,
+
+            depends_on: depends
         })
     })?;
     

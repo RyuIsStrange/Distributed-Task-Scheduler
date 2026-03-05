@@ -22,6 +22,8 @@ pub struct SubmitJobRequest {
     pub priority: Option<Priority>,
 
     pub schedule: Option<String>,
+
+    pub dependent: Option<Uuid>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
