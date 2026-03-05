@@ -36,6 +36,7 @@ enum Commands {
     
     /// Check job status
     Status {
+        /// UUID of job to lookup
         #[arg()]
         job_id: String,
     },
