@@ -17,34 +17,31 @@ struct Cli {
 enum Commands {
     /// Submit new job
     Submit {
-        /// Command to run
-        #[arg()]
+        #[arg(help = "Command to run")]
         command: String,
-        /// Arguments for the command
-        #[arg(long)]
+
+        #[arg(long, help = "Arguments for the command")]
         args: Option<String>,
-        /// Priority of the job. Options: High, Medium, or Low
-        #[arg(long)]
+
+        #[arg(long, help = "Priority of the job. Options: High, Medium, or Low")]
         priority: Option<String>,
-        /// 5-6 Length cron schedule
-        #[arg(long)]
+        
+        #[arg(long, help = "5-6 Length cron schedule")]
         schedule: Option<String>,
-        /// UUID of job required to finish for this one to run
-        #[arg(long)]
+
+        #[arg(long, help = "UUID of job required to finish for this one to run")]
         dependant: Option<Uuid>
     },
     
     /// Check job status
     Status {
-        /// UUID of job to lookup
-        #[arg()]
+        #[arg(help = "UUID of job to lookup")]
         job_id: String,
     },
     
     /// List jobs
     List {
-        /// Status to filter jobs by
-        #[arg(long)]
+        #[arg(long, help = "Status to filter jobs")]
         status: Option<String>,
     },
 }
