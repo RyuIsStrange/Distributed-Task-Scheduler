@@ -210,17 +210,56 @@ impl JobQueue {
             .or_else(|| self.pending_medium.pop_front())
             .or_else(|| self.pending_low.pop_front());
         
-        if let Some(j) = &job {
-            self.update_job_status(j.id, JobStatus::RUNNING);
-            
-            if let Some(worker) = self.workers.get_mut(&requester) {
-                worker.current_job_id = Some(j.id);
-            }
+        if let Some(j) = job.clone() {
+            if let Some(requirements) = j.clone().depends_on && (j.depends_on.iter().len() > 0) {
+                let mut completed = vec![];
+                let mut failed_req = false;
+                
+                for id in requirements.iter() {
+                    let checking = self.get_job(*id);
+                    match checking {
+                        Some(job) => {
+                            if job.status == JobStatus::COMPLETED {
+                                completed.push(id);
+                            }
+                            if job.status == JobStatus::FAILED || job.status == JobStatus::CANCELED {
+                                failed_req = true;
+                            }
+                        },
+                        None => {} // Do nothing so the job gets re-queued as failed to get required job
+                    } 
+                }
 
-            db::update_job_status(&self.connection, j.id, JobStatus::RUNNING).unwrap();
+                if completed.len() == requirements.len() {
+                    self.add_worker_job(j.clone(), requester);
+                    return Some(j);
+                } else {
+                    // Add job back into the VecDeque without re-adding it to the DB
+                    // As long if one of the required jobs hasn't failed or been canceled
+                    if failed_req {
+                        self.update_job_status(j.id, JobStatus::FAILED);
+                    } else {
+                        if j.status != JobStatus::WAITING {
+                            self.update_job_status(j.id, JobStatus::WAITING);
+                        }
+
+                        match j.priority {
+                            Priority::HIGH => self.pending_high.push_back(j.clone()),
+                            Priority::MEDIUM => self.pending_medium.push_back(j.clone()),
+                            Priority::LOW => self.pending_low.push_back(j.clone()),
+                        };
+                    }
+
+                    return None;
+                }
+
+            } else {
+                self.add_worker_job(j.clone(), requester);
+                return Some(j)
+            }
+        } else {
+            return None
         }
-        
-        job
     }
 
     pub fn get_job(&self, job_id: Uuid) -> Option<Job> {
