@@ -92,6 +92,8 @@ pub async fn submit_job(
 ) -> impl Responder {
     let mut q = queue.lock().await;
 
+    let mut fail_request = false;
+
     #[allow(irrefutable_let_patterns)]
     let (schedule, next_run, is_recurring) = if req.schedule.is_some() {
         let req_sched = req.schedule.clone().unwrap();
@@ -122,8 +124,22 @@ pub async fn submit_job(
         (None, None, false)
     };
 
-    let depend = if req.dependent.is_some() {
-        req.dependent
+    let depend = if req.depends_on.is_some() {
+        let ids = req.depends_on.clone();
+
+        let mut count = vec![];
+        for id in ids.as_ref().unwrap() {
+            if JobQueue::get_job(&q, *id).is_some() {
+                count.push(id);
+            }
+        }
+        
+        if count.len() == ids.as_ref().unwrap().len() {
+            ids
+        } else {
+            fail_request = true;
+            None
+        }
     } else {
         None
     };
@@ -149,14 +165,18 @@ pub async fn submit_job(
     };
 
 
-    if is_recurring {
-        log::info!("New scheduled job added. Job info: id: {:?}, cmd: {:?}, args: {:?}", job.id, job.command, job.args);
-        JobQueue::add_scheduled_jobs(&mut q, job.clone());
+    if fail_request {
+        HttpResponse::BadRequest().finish()
     } else {
-        log::info!("New job added. Job info: id: {:?}, cmd: {:?}, args: {:?}", job.id, job.command, job.args);
-        JobQueue::add_job(&mut q, job.clone());
+        if is_recurring {
+            log::info!("New scheduled job added. Job info: id: {:?}, cmd: {:?}, args: {:?}", job.id, job.command, job.args);
+            JobQueue::add_scheduled_jobs(&mut q, job.clone());
+        } else {
+            log::info!("New job added. Job info: id: {:?}, cmd: {:?}, args: {:?}", job.id, job.command, job.args);
+            JobQueue::add_job(&mut q, job.clone());
+        }
+        HttpResponse::Ok().json( job )
     }
-    HttpResponse::Ok().json( job )
 }
 
 pub async fn check_schedules(queue: Arc<Mutex<JobQueue>>) {
