@@ -6,7 +6,7 @@ use common::{job::{Job, Priority}, message::SubmitJobRequest};
 use crate::client;
 
 
-pub async fn job(command: String, args_str: Option<String>, priority: Option<String>, schedule: Option<String>, depends_on: Option<Uuid>) {
+pub async fn job(command: String, args_str: Option<String>, priority: Option<String>, schedule: Option<String>, depends_on: Option<String>) {
     let mut args = vec![];
 
     if args_str.is_some() {
@@ -30,12 +30,35 @@ pub async fn job(command: String, args_str: Option<String>, priority: Option<Str
         p = Some(Priority::LOW);
     }
 
+    // TODO: Make error out gracefully without submitting job request
+
+    let depend_ids: Option<Vec<Uuid>>;
+    if let Some(deps) = depends_on {
+        let v: Vec<String> = deps.split(",").map(String::from).collect();
+
+        let mut collected_ids = vec![];
+
+        for id in v {
+            match Uuid::from_str(&id) {
+                Ok(val) => { collected_ids.push(val); },
+                Err(_) => {
+                    println!("Invalid ID inputed: {}", id);
+                    break;
+                }
+            }
+        }
+
+        depend_ids = Some(collected_ids)
+    } else {
+        depend_ids = None
+    }
+
     let json = SubmitJobRequest {
         command: command,
         args: args,
         priority: p,
         schedule: schedule,
-        dependent: depends_on
+        depends_on: depend_ids
     };
 
     let result = client::submit_job(json).await;
