@@ -43,7 +43,9 @@ I started this project ~1/5/26 and I am still working on this today.
 - Chrono for life times of workers/ect.
 
 ## What am I working on?
-Job Dependencies - Queue jobs that wait for another to complete.
+CLI & DB Error Handling - Make errors easier for CLI clients to read, and make DB error less likely to malform or corrupt the DB. 
+
+General Error fixes - This will be more of what limitations/deadlocks could the system encounter.
 
 ## What Works
 
@@ -69,10 +71,14 @@ Job Dependencies - Queue jobs that wait for another to complete.
 - List jobs with `scheduler list --status <filter>`
 - Colored output to help visualize things.
 
-### Whats next?
+**Job Dependencies:**
+- Submit jobs with one or more dependency UUIDs using `--depends-on`
+- Dependent jobs are blocked until all required jobs complete
+- Invalid or nonexistent dependency UUIDs are rejected at submission with a 400 error
+- If any dependency fails or is canceled, the dependent job is automatically marked as failed
+- Blocked jobs are given a WAITING status so they are distinguishable from ready PENDING jobs
 
-CLI & DB Error Handling - Make errors easier for CLI clients to read, and make DB error less likely to malform or corrupt the DB
-    ^ General Error fixes -  This will be more of what limitations/deadlocks could the system encounter.
+### Whats next?
 
 Rate Limiting & Throttling - To control job execution rate per worker or job type and to limit job submissions and status request.
 
