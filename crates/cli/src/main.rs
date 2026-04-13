@@ -1,5 +1,4 @@
 use clap::{Parser, Subcommand};
-use uuid::Uuid;
 
 use crate::commands::{list, status, submit};
 
@@ -29,8 +28,8 @@ enum Commands {
         #[arg(long, help = "5-6 Length cron schedule")]
         schedule: Option<String>,
 
-        #[arg(long, help = "UUID of job required to finish for this one to run")]
-        dependant: Option<Uuid>
+        #[arg(long, help = "UUID of job required to finish for this one to run\nExample: UUID1, UUID2")]
+        depends_on: Option<String>
     },
     
     /// Check job status
@@ -53,14 +52,14 @@ async fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Submit { command , args, priority, schedule, dependant} => { 
+        Commands::Submit { command , args, priority, schedule, depends_on} => { 
             submit::job(
                 command, 
                 args, 
                 priority, 
                 schedule,
-                dependant
-            ).await; 
+                depends_on
+            ).await;
         },
 
         Commands::Status { job_id } => { status::fetch(job_id).await; },
