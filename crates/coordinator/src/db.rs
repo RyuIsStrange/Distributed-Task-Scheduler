@@ -30,7 +30,7 @@ pub fn init(conn: &Connection) -> Result<(), Error> {
             is_recurring BOOL,
             parent_schedule_id UUID,
 
-            depends_on UUID
+            depends_on TEXT
         );",
         ()
     )?;
@@ -70,7 +70,7 @@ pub fn insert_job(conn: &Connection, job: Job) -> Result<(), Error> {
             job.is_recurring,
             job.parent_schedule_id.map(|id| id.to_string()),
 
-            job.depends_on.unwrap_or_else(|| job.id).to_string()
+            serde_json::to_string(&job.depends_on).unwrap()
         ),
     )?;
 
@@ -147,7 +147,7 @@ pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec
         let next_run_str: Option<String> = Some(row.get(10)?);
         let parent_id: Option<String> = row.get(11)?;
 
-        let depends_on: Option<String> = row.get(12)?;
+        let depends_on_str: String = row.get(12)?;
 
         
         // TODO: Better error handling in unwraps (ex: id: Uuid::from_str(...).map_err(|_| Error::InvalidColumnType(...
@@ -162,13 +162,6 @@ pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec
                 next_run_str.and_then(|s| DateTime::parse_from_rfc3339(&s).ok().map(|dt| dt.into())),
                 parent_id.and_then(|s| Uuid::from_str(&s).ok())
             )
-        };
-
-        // Should see if I can save none if posible so I can just check as none
-        let depends = if depends_on == Some(id_str.clone()) {
-            None
-        } else {
-            Some(Uuid::from_str(&depends_on.unwrap()).unwrap())
         };
 
         Ok(Job { 
@@ -188,7 +181,7 @@ pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec
             next_run,
             parent_schedule_id: p_id,
 
-            depends_on: depends
+            depends_on: serde_json::from_str::<Option<Vec<Uuid>>>(&depends_on_str).unwrap()
         })
     })?;
     
