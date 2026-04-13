@@ -23,7 +23,7 @@ pub struct SubmitJobRequest {
 
     pub schedule: Option<String>,
 
-    pub dependent: Option<Uuid>
+    pub depends_on: Option<Vec<Uuid>>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
