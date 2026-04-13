@@ -27,7 +27,7 @@ pub struct Job {
     pub is_recurring: bool,
     pub parent_schedule_id: Option<Uuid>,
 
-    pub depends_on: Option<Uuid>
+    pub depends_on: Option<Vec<Uuid>>
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -44,7 +44,8 @@ pub enum JobStatus {
     COMPLETED,
     FAILED,
     CANCELED,
-    RETRYING
+    RETRYING,
+    WAITING
 }
 
 impl FromStr for JobStatus {
@@ -58,6 +59,7 @@ impl FromStr for JobStatus {
             "FAILED" => Ok(JobStatus::FAILED),
             "CANCELED" => Ok(JobStatus::CANCELED),
             "RETRYING" => Ok(JobStatus::RETRYING),
+            "WAITING" => Ok(JobStatus::WAITING),
 
             _ => Err("Invalid Status")
         }
@@ -73,7 +75,8 @@ impl ToString for JobStatus {
             Self::COMPLETED => "COMPLETED".to_string(),
             Self::FAILED => "FAILED".to_string(),
             Self::CANCELED => "CANCELED".to_string(),
-            Self::RETRYING => "RETRYING".to_string()
+            Self::RETRYING => "RETRYING".to_string(),
+            Self::WAITING => "WAITING".to_string()
         }
     }
 }
