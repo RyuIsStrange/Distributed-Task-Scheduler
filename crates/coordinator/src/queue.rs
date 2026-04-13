@@ -195,6 +195,16 @@ impl JobQueue {
         }
     }
 
+    fn add_worker_job(&mut self, j: Job, requester: Uuid) {
+        self.update_job_status(j.id, JobStatus::RUNNING);
+        
+        if let Some(worker) = self.workers.get_mut(&requester) {
+            worker.current_job_id = Some(j.id);
+        }
+
+        db::update_job_status(&self.connection, j.id, JobStatus::RUNNING).unwrap();
+    }
+
     pub fn get_next_job(&mut self, requester: Uuid) -> Option<Job> {
         let job = self.pending_high.pop_front()
             .or_else(|| self.pending_medium.pop_front())
