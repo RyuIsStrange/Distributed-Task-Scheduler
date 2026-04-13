@@ -72,6 +72,7 @@ Job Dependencies - Queue jobs that wait for another to complete.
 ### Whats next?
 
 CLI & DB Error Handling - Make errors easier for CLI clients to read, and make DB error less likely to malform or corrupt the DB
+    ^ General Error fixes -  This will be more of what limitations/deadlocks could the system encounter.
 
 Rate Limiting & Throttling - To control job execution rate per worker or job type and to limit job submissions and status request.
 
