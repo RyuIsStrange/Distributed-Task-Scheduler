@@ -3,7 +3,7 @@ use common::{
         Job, JobResult, JobStatus, Priority 
     }, 
     message::{
-        GetJobListResponse, NextJobRequest, SubmitJobListRequest, SubmitJobRequest, WorkerHeartbeat, WorkerInfo, WorkerRegister, WorkerStatus 
+        ErrorMessage, GetJobListResponse, NextJobRequest, SubmitJobListRequest, SubmitJobRequest, WorkerHeartbeat, WorkerInfo, WorkerRegister, WorkerStatus 
     }
 };
 use actix_web::{
@@ -166,7 +166,7 @@ pub async fn submit_job(
 
 
     if fail_request {
-        HttpResponse::BadRequest().finish()
+        HttpResponse::BadRequest().json(ErrorMessage::new(String::from("400"), String::from("Request failed on parsing dependency UUIDs.")))
     } else {
         if is_recurring {
             log::info!("New scheduled job added. Job info: id: {:?}, cmd: {:?}, args: {:?}", job.id, job.command, job.args);
@@ -242,10 +242,10 @@ pub async fn job_details(
         if details.is_some() {
             HttpResponse::Ok().json(details)
         } else {
-            HttpResponse::NotFound().finish() // No job? Return 404
+            HttpResponse::NotFound().json(ErrorMessage::new(String::from("404"), format!("No job with id: {}", job_id))) // No job? Return 404
         }
     } else {
-        HttpResponse::BadRequest().finish() // Can't parse Uuid/not valid Uuid? Return 400
+        HttpResponse::BadRequest().json(ErrorMessage::new(String::from("400"), String::from("Failed to parse UUID or UUID may be invalid."))) // Can't parse Uuid/not valid Uuid? Return 400
     }
 }
 
@@ -260,6 +260,6 @@ pub async fn list_jobs(
     if response.is_ok() {
         HttpResponse::Ok().json(GetJobListResponse{ list: Some(response.unwrap())})
     } else {
-        HttpResponse::BadRequest().finish()
+        HttpResponse::BadRequest().json(ErrorMessage::new(String::from("400"), String::from("There was an error fetching job list.")))
     }
 }
