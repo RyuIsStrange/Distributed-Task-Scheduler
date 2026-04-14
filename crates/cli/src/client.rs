@@ -1,38 +1,70 @@
-use common::{job::JobStatus, message::{GetJobListResponse, GetJobStatusResponse, SubmitJobListRequest, SubmitJobRequest}};
-use reqwest::{Error, Response};
+use common::{job::JobStatus, message::{ErrorMessage, GetJobListResponse, GetJobStatusResponse, SubmitJobListRequest, SubmitJobRequest}};
+use reqwest::Response;
 
 const COORDINATOR_ADDR: &str = "127.0.0.1:8080";
 
-pub async fn submit_job(submit_request: SubmitJobRequest) -> Result<Response, Error> {
+pub async fn submit_job(submit_request: SubmitJobRequest) -> Result<Response, ErrorMessage> {
     let url = format!("http://{}/api/job", COORDINATOR_ADDR);
 
     let client = reqwest::Client::new();
 
-    let post = client.post(url).json(&submit_request).send().await;
+    match client.post(url).json(&submit_request).send().await {
+        Ok(response) => {
+            if response.status().is_success() {
+                Ok(response)
+            } else {
+                let error = response.json::<ErrorMessage>().await
+                    .unwrap_or_else(|_| ErrorMessage::new(String::from("500"), String::from("Unknown message from server.")));
+                
+                Err(error)
+            }
+        },
+        Err(_) => {Err(ErrorMessage::new(String::from("503"), String::from("Failed to send request to server.")))}
+    }
 
-    post
 }
 
-pub async fn fetch_status(id: String) -> Result<GetJobStatusResponse, Error> {
+pub async fn fetch_status(id: String) -> Result<GetJobStatusResponse, ErrorMessage> {
     let url = format!("http://{}/api/job/{}", COORDINATOR_ADDR, id);
 
-    let response = reqwest::get(&url).await?;
+    match reqwest::get(&url).await {
+        Ok(response) => {
+            if response.status().is_success() {
+                let json = response.json::<GetJobStatusResponse>().await
+                    .map_err(|_| ErrorMessage::new(String::from("500"), String::from("Unknown message from server.")))?;
 
-    // let status = response.status();
+                Ok(json)
+            } else {
+                let error = response.json::<ErrorMessage>().await
+                    .unwrap_or_else(|_| ErrorMessage::new(String::from("500"), String::from("Unknown message from server.")));
 
-    let json = response.json::<GetJobStatusResponse>().await?;
-
-    Ok(json)
+                Err(error)
+            }
+        },
+        Err(_) => {Err(ErrorMessage::new(String::from("503"), String::from("Failed to send request to server.")))}
+    }   
 }
 
-pub async fn fetch_list(status_search: Option<JobStatus>) -> Result<GetJobListResponse, Error> {
+pub async fn fetch_list(status_search: Option<JobStatus>) -> Result<GetJobListResponse, ErrorMessage> {
     let url = format!("http://{}/api/job/list", COORDINATOR_ADDR);
 
     let client = reqwest::Client::new();
 
-    let response = client.post(&url).json(&SubmitJobListRequest { status_search }).send().await?;
+    match client.post(&url).json(&SubmitJobListRequest { status_search }).send().await {
+        Ok(response) => {
+            if response.status().is_success() {
+                let json = response.json::<GetJobListResponse>().await
+                    .map_err(|_| ErrorMessage::new(String::from("500"), String::from("Unknown message from server.")))?;
 
-    let json = response.json::<GetJobListResponse>().await?;
+                Ok(json)
+            } else {
+                let error = response.json::<ErrorMessage>().await
+                    .unwrap_or_else(|_| ErrorMessage::new(String::from("500"), String::from("Unknown message from server.")));
 
-    Ok(json)
+                Err(error)
+            }
+        },
+        Err(_) => {Err(ErrorMessage::new(String::from("503"), String::from("Failed to send request to server.")))}
+    }
+
 }
