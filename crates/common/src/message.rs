@@ -103,3 +103,12 @@ pub struct ErrorMessage {
     pub code: String,
     pub message: String
 }
+
+impl ErrorMessage {
+    pub fn new(code: String, message: String) -> Self {
+        Self {
+            code,
+            message
+        }
+    }
+}
