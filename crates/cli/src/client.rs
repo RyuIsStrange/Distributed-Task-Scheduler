@@ -2,6 +2,8 @@ use common::{job::JobStatus, message::{ErrorMessage, GetJobListResponse, GetJobS
 use reqwest::Response;
 
 const COORDINATOR_ADDR: &str = "127.0.0.1:8080";
+const PARSE_ERROR_STRING: &str = "Unknown message from server.";
+const FAILED_REQUEST_STRING: &str = "Failed to send request to server.";
 
 pub async fn submit_job(submit_request: SubmitJobRequest) -> Result<Response, ErrorMessage> {
     let url = format!("http://{}/api/job", COORDINATOR_ADDR);
@@ -14,12 +16,12 @@ pub async fn submit_job(submit_request: SubmitJobRequest) -> Result<Response, Er
                 Ok(response)
             } else {
                 let error = response.json::<ErrorMessage>().await
-                    .unwrap_or_else(|_| ErrorMessage::new(String::from("500"), String::from("Unknown message from server.")));
+                    .unwrap_or_else(|_| ErrorMessage::new(String::from("500"), PARSE_ERROR_STRING.to_string()));
                 
                 Err(error)
             }
         },
-        Err(_) => {Err(ErrorMessage::new(String::from("503"), String::from("Failed to send request to server.")))}
+        Err(_) => {Err(ErrorMessage::new(String::from("503"), FAILED_REQUEST_STRING.to_string()))}
     }
 
 }
@@ -31,17 +33,17 @@ pub async fn fetch_status(id: String) -> Result<GetJobStatusResponse, ErrorMessa
         Ok(response) => {
             if response.status().is_success() {
                 let json = response.json::<GetJobStatusResponse>().await
-                    .map_err(|_| ErrorMessage::new(String::from("500"), String::from("Unknown message from server.")))?;
+                    .map_err(|_| ErrorMessage::new(String::from("500"), PARSE_ERROR_STRING.to_string()))?;
 
                 Ok(json)
             } else {
                 let error = response.json::<ErrorMessage>().await
-                    .unwrap_or_else(|_| ErrorMessage::new(String::from("500"), String::from("Unknown message from server.")));
+                    .unwrap_or_else(|_| ErrorMessage::new(String::from("500"), PARSE_ERROR_STRING.to_string()));
 
                 Err(error)
             }
         },
-        Err(_) => {Err(ErrorMessage::new(String::from("503"), String::from("Failed to send request to server.")))}
+        Err(_) => {Err(ErrorMessage::new(String::from("503"), FAILED_REQUEST_STRING.to_string()))}
     }   
 }
 
@@ -54,17 +56,17 @@ pub async fn fetch_list(status_search: Option<JobStatus>) -> Result<GetJobListRe
         Ok(response) => {
             if response.status().is_success() {
                 let json = response.json::<GetJobListResponse>().await
-                    .map_err(|_| ErrorMessage::new(String::from("500"), String::from("Unknown message from server.")))?;
+                    .map_err(|_| ErrorMessage::new(String::from("500"), PARSE_ERROR_STRING.to_string()))?;
 
                 Ok(json)
             } else {
                 let error = response.json::<ErrorMessage>().await
-                    .unwrap_or_else(|_| ErrorMessage::new(String::from("500"), String::from("Unknown message from server.")));
+                    .unwrap_or_else(|_| ErrorMessage::new(String::from("500"), PARSE_ERROR_STRING.to_string()));
 
                 Err(error)
             }
         },
-        Err(_) => {Err(ErrorMessage::new(String::from("503"), String::from("Failed to send request to server.")))}
+        Err(_) => {Err(ErrorMessage::new(String::from("503"), FAILED_REQUEST_STRING.to_string()))}
     }
 
 }
