@@ -89,13 +89,7 @@ pub async fn fetch(id: String) {
 
         println!("{}", print_response)
     } else {
-        println!("{}", "There was an error when fetching job.".red());
-        // if res.is_ok() && res.as_ref().unwrap().1 == StatusCode::from_u16(400).unwrap() {
-        //     println!("{} {}", "Status code: 400. Failed to parse UUID: ".red(), id);
-        // } else if res.is_ok() && res.as_ref().unwrap().1 == StatusCode::from_u16(404).unwrap() {
-        //     println!("{} {}", "Status code: 404. Failed to find job with UUID: ".red(), id);
-        // } else {
-        //     println!("Err: {:#?}", res.err());
-        // }
+        let error_message = res.err().unwrap();
+        println!("Error code: {}. {}", error_message.code, error_message.message.red())
     }
 }

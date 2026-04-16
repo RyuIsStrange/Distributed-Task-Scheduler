@@ -26,8 +26,8 @@ pub async fn jobs(input: Option<String>) {
         let list = client::fetch_list(search_param).await;
 
         if list.is_err() {
-            println!("{}", "An error has occurred.".red());
-            println!("Err printout: {:?}", list)
+            let error_message = list.err().unwrap();
+            println!("Error code: {}. {}", error_message.code, error_message.message.red())
         } else {
             let list_unwrap = list.unwrap().list.unwrap();
             

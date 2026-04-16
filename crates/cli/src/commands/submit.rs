@@ -69,6 +69,7 @@ pub async fn job(command: String, args_str: Option<String>, priority: Option<Str
             Err(_) => println!("{} Job was submited but failed to generate JSON response.", "Err:".red())
         }
     } else {
-        println!("{} Job failed to be submited.", "Err:".red());
+        let error_message = result.err().unwrap();
+        println!("Error code: {}. {}", error_message.code, error_message.message.red())
     }
 }
