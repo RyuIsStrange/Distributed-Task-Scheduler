@@ -5,7 +5,7 @@ use common::job::{
         Job,
 };
 use rusqlite::{
-    Connection, Error, params
+    Connection, Error, params, types::Type
 };
 use std::str::FromStr;
 use chrono::{DateTime, Utc};
@@ -56,7 +56,7 @@ pub fn insert_job(conn: &Connection, job: Job) -> Result<(), Error> {
         (
             job.id.to_string(), 
             job.command, 
-            serde_json::to_string(&job.args).unwrap(), 
+            serde_json::to_string(&job.args).map_err(|err| Error::ToSqlConversionFailure(Box::new(err)))?, 
             job.status.to_string(), 
             job.timestamp.to_rfc3339(), 
 
@@ -70,7 +70,7 @@ pub fn insert_job(conn: &Connection, job: Job) -> Result<(), Error> {
             job.is_recurring,
             job.parent_schedule_id.map(|id| id.to_string()),
 
-            serde_json::to_string(&job.depends_on).unwrap()
+            serde_json::to_string(&job.depends_on).map_err(|err| Error::ToSqlConversionFailure(Box::new(err)))?
         ),
     )?;
 
@@ -150,8 +150,8 @@ pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec
         let depends_on_str: String = row.get(12)?;
 
         
-        // TODO: Better error handling in unwraps (ex: id: Uuid::from_str(...).map_err(|_| Error::InvalidColumnType(...
-        // Or Leave it, however it would be nice incase if something corrupts or becomes malformed 
+        // TODO?: Right now if something errors in this task NOTHING will be returned as it will collect no jobs
+        // May look into skipping malformed job and returning rest while logging a warning
 
         let (schedule, is_recurring, next_run, p_id) = if schedule.as_deref() == Some("None") {
             (None, false, None, None)
@@ -165,23 +165,23 @@ pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec
         };
 
         Ok(Job { 
-            id: Uuid::from_str(&id_str).unwrap(), 
+            id: Uuid::from_str(&id_str).map_err(|_| Error::InvalidColumnType(0, id_str, Type::Text))?, 
             command, 
-            args: serde_json::from_str::<Vec<String>>(&args_str).unwrap(), 
-            status: JobStatus::from_str(&status_str).unwrap(), 
-            timestamp: DateTime::parse_from_rfc3339(&timestamp_str).unwrap().into(),
+            args: serde_json::from_str::<Vec<String>>(&args_str).map_err(|_| Error::InvalidColumnType(2, args_str, Type::Text))?, 
+            status: JobStatus::from_str(&status_str).map_err(|_| Error::InvalidColumnType(3, status_str, Type::Text))?, 
+            timestamp: DateTime::parse_from_rfc3339(&timestamp_str).map_err(|_| Error::InvalidColumnType(4, timestamp_str, Type::Text))?.into(),
             
             retry_count: retry_cnt,
             max_retries: max_retry_cnt,
 
-            priority: Priority::from_str(&priority).unwrap(),
+            priority: Priority::from_str(&priority).map_err(|_| Error::InvalidColumnType(7, priority, Type::Text))?,
 
             schedule,
             is_recurring: is_recurring,
             next_run,
             parent_schedule_id: p_id,
 
-            depends_on: serde_json::from_str::<Option<Vec<Uuid>>>(&depends_on_str).unwrap()
+            depends_on: serde_json::from_str::<Option<Vec<Uuid>>>(&depends_on_str).map_err(|_| Error::InvalidColumnType(12, depends_on_str, Type::Text))?
         })
     })?;
     
