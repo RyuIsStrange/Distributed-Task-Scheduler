@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use uuid::Uuid;
 
 use crate::commands::{list, status, submit};
 
@@ -28,8 +29,8 @@ enum Commands {
         #[arg(long, help = "5-6 Length cron schedule")]
         schedule: Option<String>,
 
-        #[arg(long, help = "UUID of job required to finish for this one to run\nExample: UUID1, UUID2")]
-        depends_on: Option<String>
+        #[arg(long, value_delimiter(','), help = "UUID of job required to finish for this one to run\nExample: --depends-on UUID1, UUID2")]
+        depends_on: Option<Vec<Uuid>>
     },
     
     /// Check job status
@@ -44,8 +45,6 @@ enum Commands {
         status: Option<String>,
     },
 }
-
-// TODO: Make error prompting in CLI more then "Error has occurred" and to parse the error and inform the user what caused it.
 
 #[tokio::main]
 async fn main() {
