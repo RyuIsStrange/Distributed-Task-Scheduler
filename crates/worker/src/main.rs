@@ -53,7 +53,7 @@ async fn main() {
                 }
             },
             Err(e) => {
-                log::error!("Request failed, likely 404 (no jobs): {}", e);
+                log::debug!("Request failed, likely 404 (no jobs): {}", e);
                 time::sleep(Duration::from_secs(5)).await;
             }
         }    
