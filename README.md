@@ -43,9 +43,7 @@ I started this project ~1/5/26 and I am still working on this today.
 - Chrono for life times of workers/ect.
 
 ## What am I working on?
-CLI & DB Error Handling - Make errors easier for CLI clients to read, and make DB error less likely to malform or corrupt the DB. 
-
-General Error fixes - This will be more of what limitations/deadlocks could the system encounter.
+Rate Limiting & Throttling - To control job execution rate per worker or job type and to limit job submissions and status request.
 
 ## What Works
 
@@ -80,8 +78,8 @@ General Error fixes - This will be more of what limitations/deadlocks could the 
 
 ### Whats next?
 
-Rate Limiting & Throttling - To control job execution rate per worker or job type and to limit job submissions and status request.
-
 Metrics & Monitoring - Just a better way to view system health and performance.
 
-CLI Refactor - Support for the above todo features.
+CLI & DB Error Handling - Make errors easier for CLI clients to read, and make DB error less likely to malform or corrupt the DB. 
+
+^ General Error fixes - This will be more of what limitations/deadlocks could the system encounter.
