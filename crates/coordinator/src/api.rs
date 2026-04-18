@@ -192,10 +192,9 @@ pub async fn job_results(
     path: web::Path<String>,
     queue: web::Data<Arc<Mutex<JobQueue>>>
 ) -> impl Responder {
-    let job_id = Uuid::parse_str(&path.into_inner());
     let mut q = queue.lock().await;
     
-    if let Ok(id) = job_id {
+    if let Ok(id) = Uuid::parse_str(&path.into_inner()) {
         let job = JobQueue::get_job(&mut q, id);
 
         let results = JobResult {
