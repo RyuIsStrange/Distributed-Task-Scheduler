@@ -223,7 +223,7 @@ pub async fn job_results(
 
         HttpResponse::Ok().json(results)
     } else {
-        HttpResponse::BadRequest().finish()
+        HttpResponse::BadRequest().json(ErrorMessage::new(String::from("400"), String::from("Failed to parse UUID")))
     }
 }
 
