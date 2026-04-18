@@ -15,7 +15,7 @@ use common::{
 use cron::Schedule;
 use std::{collections::{
     HashMap, VecDeque 
-}, str::FromStr};
+}, process::exit, str::FromStr};
 use chrono::{
     Duration, 
     Utc
@@ -50,10 +50,16 @@ impl JobQueue {
             pending_low: VecDeque::new(),
 
             workers: HashMap::new(),
-            connection: Connection::open("scheduler.db").unwrap()
+            connection: Connection::open("scheduler.db").unwrap_or_else(|e| {
+                log::error!("DB Error: Failed to open database, exiting program.\n Error: {}", e); 
+                exit(1); 
+            })
         };
 
-        let jobs = db::load_pending_jobs(&queue.connection).unwrap();
+        let jobs = db::load_pending_jobs(&queue.connection).unwrap_or_else(|e| {
+                log::error!("DB Error: Failed to load pending jobs, exiting program.\n Error: {}", e); 
+                exit(1); 
+            });
         
         for job in jobs {
             if job.is_recurring {
@@ -128,7 +134,11 @@ impl JobQueue {
     // Job Functions
     
     pub fn add_scheduled_jobs(&mut self, job: Job) {
-        db::insert_job(&self.connection, job.clone()).unwrap();
+        match db::insert_job(&self.connection, job.clone()) {
+            Ok(_) => {},
+            Err(err) => {log::error!("DB Error: Failed to insert job into the database for job id: {}\n Error output: {:?}", job.id, err)}
+        }
+
         self.schedules.insert(job.id, job.clone());
     }
 
@@ -169,14 +179,23 @@ impl JobQueue {
 
                 if jobs.is_recurring {
                     if let Some(j) = self.schedules.get_mut(&job_id) {
-                        let next = Schedule::from_str(&j.schedule.clone().unwrap())
-                            .ok()
-                            .and_then(|s| s.upcoming(Utc).next());
+                        let next;
+                        
+                        if let Some(sched) = &j.schedule.clone() { 
+                            next = Schedule::from_str(sched)
+                                .ok()
+                                .and_then(|s| s.upcoming(Utc).next());
+                            
+                            if let Some(next_time) = next {
+                                log::info!("New run time {}", next_time);
 
-                        if let Some(next_time) = next {
-                            log::info!("New run time {}", next_time);
-                            db::update_schedule_run(&self.connection, job_id, next_time).unwrap();
-                            j.next_run = Some(next_time);
+                                match db::update_schedule_run(&self.connection, job_id, next_time) {
+                                    Ok(_) => {},
+                                    Err(err) => {log::error!("DB Error: Failed update schedule time for job id: {}\n Error output: {:?}", j.id, err)}   
+                                }
+
+                                j.next_run = Some(next_time);
+                            }
                         }
                     }
                 }
@@ -185,7 +204,11 @@ impl JobQueue {
     }
 
     pub fn add_job(&mut self, job: Job) {
-        db::insert_job(&self.connection, job.clone()).unwrap();
+        match db::insert_job(&self.connection, job.clone()) {
+            Ok(_) => {},
+            Err(err) => {log::error!("DB Error: Failed insert job into database. Job id: {}\n Error output: {:?}", job.id, err)}   
+        }
+        
         self.jobs.insert(job.id, job.clone());
         
         match job.priority {
@@ -202,7 +225,10 @@ impl JobQueue {
             worker.current_job_id = Some(j.id);
         }
 
-        db::update_job_status(&self.connection, j.id, JobStatus::RUNNING).unwrap();
+        match db::update_job_status(&self.connection, j.id, JobStatus::RUNNING) {
+            Ok(_) => {},
+            Err(err) => {log::error!("DB Error: Failed to set job status to running for job id: {}\n Error output: {:?}", j.id, err)}   
+        }
     }
 
     pub fn get_next_job(&mut self, requester: Uuid) -> Option<Job> {
@@ -282,8 +308,15 @@ impl JobQueue {
             job.status = JobStatus::RETRYING;
             job.retry_count += 1;
 
-            db::update_job_status(&self.connection, job_id, JobStatus::RETRYING).unwrap();
-            db::update_retry_count(&self.connection, job_id, job.retry_count).unwrap();
+            match db::update_job_status(&self.connection, job_id, JobStatus::RETRYING) {
+                Ok(_) => {},
+                Err(err) => {log::error!("DB Error: Failed update status for job id: {}\n Error output: {:?}", job_id, err)}   
+            }
+            
+            match db::update_retry_count(&self.connection, job_id, job.retry_count) {
+                Ok(_) => {},
+                Err(err) => {log::error!("DB Error: Failed update retry count for job id: {}\n Error output: {:?}", job_id, err)}   
+            }
 
             match job.priority {
                 Priority::HIGH => self.pending_high.push_back(job.clone()),
@@ -295,14 +328,21 @@ impl JobQueue {
 
     pub fn update_job_status(&mut self, job_id: Uuid, status: JobStatus) {
         if let Some(job) = self.jobs.get_mut(&job_id) {
-            db::update_job_status(&self.connection, job_id, status.clone()).unwrap();
+            match db::update_job_status(&self.connection, job_id, status.clone()){
+                Ok(_) => {},
+                Err(err) => {log::error!("DB Error: Failed update status for job id: {}\n Error output: {:?}", job_id, err)}   
+            }
+
             job.status = status;
         }
     }
 
     pub fn store_results(&mut self, job_id: Uuid, job_results: JobResult) {
-        // update job queue with results
-        db::insert_results(&self.connection, job_id, job_results.clone()).unwrap();
+        match db::insert_results(&self.connection, job_id, job_results.clone()) {
+            Ok(_) => {},
+            Err(err) => {log::error!("DB Error: Failed update insert results into the database. Job id: {}\n Error output: {:?}", job_id, err)}   
+        }
+
         self.results.insert(job_id, job_results);
     }
 }
