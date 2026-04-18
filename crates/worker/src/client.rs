@@ -10,21 +10,35 @@ use reqwest::{
     Response,
     Error,
 };
+use std::time::Duration;
+use tokio::time::sleep;
 use chrono::Utc;
 use uuid::Uuid;
 
 const COORDINATOR_ADDR: &str = "127.0.0.1:8080";
+const MAX_RETRIES: i32 = 3;
 
+// We let loop forever as it work do work until it connects/registers
 pub async fn register_worker(worker: WorkerRegister) {
-    let url = format!("http://{}/api/worker/register", COORDINATOR_ADDR);
+    loop {
+        let url = format!("http://{}/api/worker/register", COORDINATOR_ADDR);
 
-    let client = reqwest::Client::new();
+        let client = reqwest::Client::new();
 
-    let _ = client.post(url)
-        .header("Content-Type", "application/json")
-        .json(&worker)
-        .send()
-        .await;
+        match client.post(url)
+            .header("Content-Type", "application/json")
+            .json(&worker)
+            .send()
+            .await 
+            {
+            Ok(_) => {break;},
+            Err(err) => {
+                log::error!("Failed to register with Coordinator. Retrying in 10 seconds!");
+                log::error!("Connection error: {}", err);
+                sleep(Duration::from_secs(10)).await;
+            }
+        }
+    }
 }
 
 pub async fn send_heartbeat(worker_id: Uuid) {
@@ -37,11 +51,17 @@ pub async fn send_heartbeat(worker_id: Uuid) {
 
     let client = reqwest::Client::new();
 
-    let _ = client.post(url)
+    match client.post(url)
         .header("Content-Type", "application/json")
         .json(&heartbeat)
         .send()
-        .await;
+        .await 
+        {
+        Ok(_) => {/* Do nothing as heartbeat got sent */},
+        Err(_) => {
+            log::error!("Failed to send heartbeat to coordinator")
+        }
+    }
 }
 
 pub async fn get_next_job(worker_id: Uuid) -> Result<Response, Error> {
@@ -60,14 +80,28 @@ pub async fn get_next_job(worker_id: Uuid) -> Result<Response, Error> {
     response
 }
 
+// Only loop 3 times (Or what MAX_RETRIES is set to) then we can assume coordinator is offline or networking error and log the job_id w/result
 pub async fn post_job_results(results: JobResult, job_id: Uuid) {
-    let url = format!("http://{}/api/job/{}/results", COORDINATOR_ADDR, job_id);
+    for i in 1..=MAX_RETRIES {
+        let url = format!("http://{}/api/job/{}/results", COORDINATOR_ADDR, job_id);
 
-    let client = reqwest::Client::new();
+        let client = reqwest::Client::new();
 
-    let _ = client.post(url)
-        .header("Content-Type", "application/json")
-        .json(&results)
-        .send()
-        .await;
+        match client.post(url)
+            .header("Content-Type", "application/json")
+            .json(&results)
+            .send()
+            .await 
+            {
+            Ok(_) => {break;/* Break out of the loop as results got submited */},
+            Err(_) => {
+                if i != MAX_RETRIES {
+                    log::error!("Failed to submit results for job with ID: {}. Retrying after 10 seconds!", job_id);
+                    sleep(Duration::from_secs(10)).await;
+                } else {
+                    log::error!("Failed to submit results for job after {} retries.\nJob: {}\nResults: {:#?}", MAX_RETRIES, job_id, results)
+                }
+            }
+        }
+    }
 }
