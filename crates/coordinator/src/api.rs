@@ -19,7 +19,7 @@ use uuid::Uuid;
 
 use crate::queue::JobQueue;
 
-const MAX_RETRYS: u32 = 3;
+const MAX_RETRIES: u32 = 3;
 
 // Health
 
@@ -152,7 +152,7 @@ pub async fn submit_job(
         timestamp: Utc::now(),
         
         retry_count: 0,
-        max_retries: MAX_RETRYS,
+        max_retries: MAX_RETRIES,
 
         priority: req.priority.clone().unwrap_or(Priority::LOW),
 
