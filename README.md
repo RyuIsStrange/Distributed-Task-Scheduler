@@ -44,7 +44,9 @@ I started this project ~1/5/26 and I am still working on this today.
 - Chrono for life times of workers/ect.
 
 ## What am I working on?
-Metrics & Monitoring - Just a better way to view system health and performance.
+CLI & DB Error Handling - Make errors easier for CLI clients to read, and make DB error less likely to malform or corrupt the DB. 
+
+^ General Error fixes - This will be more of what limitations/deadlocks could the system encounter.
 
 ## What Works
 
@@ -82,8 +84,9 @@ Metrics & Monitoring - Just a better way to view system health and performance.
 - Worker endpoints (heartbeat, job polling, result submission) are exempt from rate limiting
 - Clients are informed with a clear message when rate limited (429 response)
 
+**Metrics & Monitoring:**
+- Prometheus-compatible /metrics endpoint exposed at the root level
+- Six Prometheus metrics covering job submission, completion, failure, queue depth, worker count, and dependency-blocked jobs — all labeled by priority where applicable
+- Worker and internal endpoints are excluded from rate limiting to ensure uninterrupted metric collection
+
 ### Whats next?
-
-CLI & DB Error Handling - Make errors easier for CLI clients to read, and make DB error less likely to malform or corrupt the DB. 
-
-^ General Error fixes - This will be more of what limitations/deadlocks could the system encounter.
