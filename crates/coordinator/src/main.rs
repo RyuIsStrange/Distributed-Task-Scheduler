@@ -18,7 +18,7 @@ use rusqlite::Connection;
 
 use crate::queue::JobQueue;
 
-mod api; mod queue; mod db;
+mod api; mod queue; mod db; mod metrics;
 
 #[actix_web::main]
 async fn main() -> Result<()> {
