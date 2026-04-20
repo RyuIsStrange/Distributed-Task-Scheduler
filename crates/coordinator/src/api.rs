@@ -13,13 +13,29 @@ use actix_web::{
 };
 use cron::Schedule;
 use tokio::sync::Mutex;
-use std::{str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::{Arc, LazyLock}};
 use chrono::Utc;
 use uuid::Uuid;
 
 use crate::queue::JobQueue;
 
 const MAX_RETRIES: u32 = 3;
+
+static MAX_QUEUE_SIZE: LazyLock<usize> = LazyLock::new(|| {
+    let queue_max= std::env::var("MAX_QUEUE_SIZE");
+    match queue_max {
+        Ok(max) => {
+            usize::from_str(&max).unwrap_or_else(|_| {
+                log::info!("Failed to parse MAX_QUEUE_SIZE. Defaulting to max of 1000."); 
+                return 1000
+            })
+        },
+        Err(_) => {
+            log::info!("MAX_QUEUE_SIZE is not present. Defaulting to max of 1000."); 
+            return 1000
+        }
+    }
+});
 
 // Health & Metrics
 
@@ -152,6 +168,12 @@ pub async fn submit_job(
         None
     };
 
+    let q_size = JobQueue::queue_size(&q);
+    let mut over_max_jobs = false;
+    if q_size >= *MAX_QUEUE_SIZE {
+        over_max_jobs = true
+    }
+
     let job = Job {
         id: Uuid::new_v4(),
         command: req.command.clone(),
@@ -175,6 +197,8 @@ pub async fn submit_job(
 
     if fail_request {
         HttpResponse::BadRequest().json(ErrorMessage::new(String::from("400"), String::from("Request failed on parsing dependency UUIDs.")))
+    } else if over_max_jobs {
+        HttpResponse::BadRequest().json(ErrorMessage::new(String::from("400"), String::from("Max number of jobs in queue reached.")))
     } else {
         if is_recurring {
             log::info!("New scheduled job added. Job info: id: {:?}, cmd: {:?}, args: {:?}", job.id, job.command, job.args);

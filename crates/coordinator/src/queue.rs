@@ -81,6 +81,10 @@ impl JobQueue {
         queue
     }
 
+    pub fn queue_size(&self) -> usize {
+        self.jobs.len()
+    }
+
     // Worker Functions
 
     pub fn register_worker(&mut self, info: WorkerInfo) {
@@ -124,6 +128,8 @@ impl JobQueue {
 
             if let Some(job_id) = recovered_job_option {
                 if let Some(j) = self.get_job(job_id) {
+                    metrics::QUEUE_DEPTH.with_label_values(&[&j.priority.to_string()]).inc();
+
                     match j.priority {
                         Priority::HIGH => self.pending_high.push_back(j.clone()),
                         Priority::MEDIUM => self.pending_medium.push_back(j.clone()),
