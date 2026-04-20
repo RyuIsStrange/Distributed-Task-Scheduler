@@ -15,6 +15,7 @@ I started this project ~1/5/26 and I am still working on this today.
 ## Technology Used
 **Backend/Coordinator:**
 - **Actix-web** - HTTP server for the REST API
+    - **Actix-governor** - Rate limiting middleware for Actix-web, built on the token bucket algorithm
 - **Tokio** - Async runtime for handling concurrent operations (worker checks, scheduled job polling, HTTP server)
 - **rusqlite** - SQLite database for job persistence
 - **cron** - Parsing and scheduling cron expressions
