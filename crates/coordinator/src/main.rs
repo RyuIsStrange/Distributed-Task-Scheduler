@@ -1,3 +1,4 @@
+use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::{
     middleware::Logger, 
     HttpServer, 
@@ -60,6 +61,13 @@ async fn main() -> Result<()> {
 
     log::info!("Starting api server...");
 
+    let governor_conf = GovernorConfigBuilder::default()
+        .seconds_per_request(5)
+        .burst_size(5)
+        .finish()
+        .expect("Invalid governor config");
+        
+
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
@@ -69,11 +77,17 @@ async fn main() -> Result<()> {
                     .route("/health", web::get().to(api::health_check))
                     .route("/worker/register", web::post().to(api::register_worker))
                     .route("/worker/heartbeat", web::post().to(api::worker_heartbeat))
-                    .route("/job", web::post().to(api::submit_job))
-                    .route("/job/list", web::post().to(api::list_jobs))
+                    
                     .route("/job/next", web::get().to(api::next_job))
-                    .route("/job/{job_id}", web::get().to(api::job_details))
                     .route("/job/{job_id}/results", web::post().to(api::job_results))
+
+                    .service(
+                        web::scope("")
+                            .wrap(Governor::new(&governor_conf))
+                            .route("/job", web::post().to(api::submit_job))
+                            .route("/job/list", web::post().to(api::list_jobs))
+                            .route("/job/{job_id}", web::get().to(api::job_details))
+                    )
             )
     })
     .bind(("127.0.0.1", 8080))?
