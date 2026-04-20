@@ -21,6 +21,7 @@ I started this project ~1/5/26 and I am still working on this today.
 - **cron** - Parsing and scheduling cron expressions
 - **uuid** - Unique job identification
 - **serde/serde_json** - JSON serialization
+- **prometheus** - Metrics collection and exposition in the Prometheus text format for system observability
 
 **Worker:**
 - **Tokio** - Async runtime for job execution
