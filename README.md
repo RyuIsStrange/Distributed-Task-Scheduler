@@ -77,7 +77,10 @@ Metrics & Monitoring - Just a better way to view system health and performance.
 - If any dependency fails or is canceled, the dependent job is automatically marked as failed
 - Blocked jobs are given a WAITING status so they are distinguishable from ready PENDING jobs
 
-### Whats next?
+**Rate Limiting:**
+- Job submission, status, and list endpoints are rate limited to 5 requests per second burst, replenishing at 1 request per 5 seconds
+- Worker endpoints (heartbeat, job polling, result submission) are exempt from rate limiting
+- Clients are informed with a clear message when rate limited (429 response)
 
 ### Whats next?
 
