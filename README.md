@@ -44,7 +44,7 @@ I started this project ~1/5/26 and I am still working on this today.
 - Chrono for life times of workers/ect.
 
 ## What am I working on?
-Rate Limiting & Throttling - To control job execution rate per worker or job type and to limit job submissions and status request.
+Metrics & Monitoring - Just a better way to view system health and performance.
 
 ## What Works
 
@@ -79,7 +79,7 @@ Rate Limiting & Throttling - To control job execution rate per worker or job typ
 
 ### Whats next?
 
-Metrics & Monitoring - Just a better way to view system health and performance.
+### Whats next?
 
 CLI & DB Error Handling - Make errors easier for CLI clients to read, and make DB error less likely to malform or corrupt the DB. 
 
