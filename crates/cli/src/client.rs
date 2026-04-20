@@ -1,7 +1,8 @@
 use common::{job::JobStatus, message::{ErrorMessage, GetJobListResponse, GetJobStatusResponse, SubmitJobListRequest, SubmitJobRequest}};
-use reqwest::Response;
+use reqwest::{Response, StatusCode};
 
 const COORDINATOR_ADDR: &str = "127.0.0.1:8080";
+const TOO_MANY_REQUESTS: &str = "Slow down too many requests have been sent recently.";
 const PARSE_ERROR_STRING: &str = "Unknown message from server.";
 const FAILED_REQUEST_STRING: &str = "Failed to send request to server.";
 
@@ -14,6 +15,8 @@ pub async fn submit_job(submit_request: SubmitJobRequest) -> Result<Response, Er
         Ok(response) => {
             if response.status().is_success() {
                 Ok(response)
+            } else if response.status() == StatusCode::TOO_MANY_REQUESTS {
+                Err(ErrorMessage::new(String::from("429"), TOO_MANY_REQUESTS.to_string()))
             } else {
                 let error = response.json::<ErrorMessage>().await
                     .unwrap_or_else(|_| ErrorMessage::new(String::from("500"), PARSE_ERROR_STRING.to_string()));
@@ -36,10 +39,12 @@ pub async fn fetch_status(id: String) -> Result<GetJobStatusResponse, ErrorMessa
                     .map_err(|_| ErrorMessage::new(String::from("500"), PARSE_ERROR_STRING.to_string()))?;
 
                 Ok(json)
+            } else if response.status() == StatusCode::TOO_MANY_REQUESTS {
+                Err(ErrorMessage::new(String::from("429"), TOO_MANY_REQUESTS.to_string()))
             } else {
                 let error = response.json::<ErrorMessage>().await
                     .unwrap_or_else(|_| ErrorMessage::new(String::from("500"), PARSE_ERROR_STRING.to_string()));
-
+                
                 Err(error)
             }
         },
@@ -59,10 +64,12 @@ pub async fn fetch_list(status_search: Option<JobStatus>) -> Result<GetJobListRe
                     .map_err(|_| ErrorMessage::new(String::from("500"), PARSE_ERROR_STRING.to_string()))?;
 
                 Ok(json)
+            } else if response.status() == StatusCode::TOO_MANY_REQUESTS {
+                Err(ErrorMessage::new(String::from("429"), TOO_MANY_REQUESTS.to_string()))
             } else {
                 let error = response.json::<ErrorMessage>().await
                     .unwrap_or_else(|_| ErrorMessage::new(String::from("500"), PARSE_ERROR_STRING.to_string()));
-
+                
                 Err(error)
             }
         },
