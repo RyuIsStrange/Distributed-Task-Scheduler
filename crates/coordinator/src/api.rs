@@ -21,7 +21,7 @@ use crate::queue::JobQueue;
 
 const MAX_RETRIES: u32 = 3;
 
-// Health
+// Health & Metrics
 
 pub async fn health_check() -> impl Responder {
     HttpResponse::Ok().json({
@@ -30,6 +30,14 @@ pub async fn health_check() -> impl Responder {
             "timestamp": Utc::now().to_rfc3339()
         }))
     })
+}
+
+pub async fn metrics() -> impl Responder {
+    let metrics = prometheus::gather();
+
+    let text = prometheus::TextEncoder::new().encode_to_string(&metrics).unwrap();
+
+    HttpResponse::Ok().content_type("text/plain; version=0.0.4").body(text)
 }
 
 // Worker

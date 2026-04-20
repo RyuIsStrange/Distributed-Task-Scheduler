@@ -73,6 +73,10 @@ async fn main() -> Result<()> {
             .wrap(Logger::default())
             .app_data(web::Data::new(queue.clone()))
             .service(
+                web::scope("/metrics")
+                    .route("", web::get().to(api::metrics))
+            )
+            .service(
                 web::scope("/api")
                     .route("/health", web::get().to(api::health_check))
                     .route("/worker/register", web::post().to(api::register_worker))
