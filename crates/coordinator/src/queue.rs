@@ -23,7 +23,7 @@ use chrono::{
 use rusqlite::Connection;
 use uuid::Uuid;
 
-use crate::db;
+use crate::{db, metrics};
 
 pub struct JobQueue {
     jobs: HashMap<Uuid, Job>,
@@ -68,6 +68,8 @@ impl JobQueue {
             } else {
                 queue.jobs.insert(job.id, job.clone());
 
+                metrics::QUEUE_DEPTH.with_label_values(&[&job.priority.to_string()]).inc();
+
                 match job.priority {
                     Priority::HIGH => queue.pending_high.push_back(job),
                     Priority::MEDIUM => queue.pending_medium.push_back(job),
@@ -82,6 +84,8 @@ impl JobQueue {
     // Worker Functions
 
     pub fn register_worker(&mut self, info: WorkerInfo) {
+        metrics::ACTIVE_WORKERS.inc();
+
         self.workers.insert(info.worker_id, info.clone());
     }
 
@@ -90,6 +94,8 @@ impl JobQueue {
             worker.last_seen = heartbeat.timestamp;
 
             if worker.status == WorkerStatus::DEAD {
+                metrics::ACTIVE_WORKERS.inc();
+
                 worker.status = WorkerStatus::ALIVE
             }
         }
@@ -113,6 +119,8 @@ impl JobQueue {
                 w.status = WorkerStatus::DEAD;
                 w.current_job_id = None;
             }
+
+            metrics::ACTIVE_WORKERS.dec();
 
             if let Some(job_id) = recovered_job_option {
                 if let Some(j) = self.get_job(job_id) {
@@ -210,6 +218,9 @@ impl JobQueue {
         }
         
         self.jobs.insert(job.id, job.clone());
+
+        metrics::JOBS_SUBMITTED_TOTAL.with_label_values(&[&job.priority.to_string()]).inc();
+        metrics::QUEUE_DEPTH.with_label_values(&[&job.priority.to_string()]).inc();
         
         match job.priority {
             Priority::HIGH => self.pending_high.push_back(job),
@@ -257,15 +268,24 @@ impl JobQueue {
                 }
 
                 if completed.len() == requirements.len() {
+                    if j.status == JobStatus::WAITING {
+                        metrics::JOBS_WAITING_TOTAL.dec();
+                    }
+                    metrics::QUEUE_DEPTH.with_label_values(&[&j.priority.to_string()]).dec();
+
                     self.add_worker_job(j.clone(), requester);
                     return Some(j);
                 } else {
                     // Add job back into the VecDeque without re-adding it to the DB
                     // As long if one of the required jobs hasn't failed or been canceled
                     if failed_req {
+                        metrics::QUEUE_DEPTH.with_label_values(&[&j.priority.to_string()]).dec();
+
                         self.update_job_status(j.id, JobStatus::FAILED);
                     } else {
                         if j.status != JobStatus::WAITING {
+                            metrics::JOBS_WAITING_TOTAL.inc();
+
                             self.update_job_status(j.id, JobStatus::WAITING);
                         }
 
@@ -280,6 +300,8 @@ impl JobQueue {
                 }
 
             } else {
+                metrics::QUEUE_DEPTH.with_label_values(&[&j.priority.to_string()]).dec();
+
                 self.add_worker_job(j.clone(), requester);
                 return Some(j)
             }
@@ -318,6 +340,8 @@ impl JobQueue {
                 Err(err) => {log::error!("DB Error: Failed update retry count for job id: {}\n Error output: {:?}", job_id, err)}   
             }
 
+            metrics::QUEUE_DEPTH.with_label_values(&[&job.priority.to_string()]).inc();
+
             match job.priority {
                 Priority::HIGH => self.pending_high.push_back(job.clone()),
                 Priority::MEDIUM => self.pending_medium.push_back(job.clone()),
@@ -331,6 +355,12 @@ impl JobQueue {
             match db::update_job_status(&self.connection, job_id, status.clone()){
                 Ok(_) => {},
                 Err(err) => {log::error!("DB Error: Failed update status for job id: {}\n Error output: {:?}", job_id, err)}   
+            }
+
+            if status == JobStatus::COMPLETED {
+                metrics::JOBS_COMPLETED_TOTAL.inc();
+            } else if status == JobStatus::FAILED {
+                metrics::JOBS_FAILED_TOTAL.inc();
             }
 
             job.status = status;
