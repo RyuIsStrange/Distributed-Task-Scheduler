@@ -149,10 +149,6 @@ pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec
 
         let depends_on_str: String = row.get(12)?;
 
-        
-        // TODO?: Right now if something errors in this task NOTHING will be returned as it will collect no jobs
-        // May look into skipping malformed job and returning rest while logging a warning
-
         let (schedule, is_recurring, next_run, p_id) = if schedule.as_deref() == Some("None") {
             (None, false, None, None)
         } else {
@@ -185,9 +181,17 @@ pub fn fetch_from_db(conn: &Connection, status: Option<JobStatus>) -> Result<Vec
         })
     })?;
     
-    let result: Result<Vec<Job>, _> = jobs.collect();
+    let results: Vec<Job> = jobs
+        .filter_map(|v| match v {
+            Ok(job) => Some(job),
+            Err(e) => {
+                log::warn!("Skipping malformed job in row: {}", e);
+                None
+            }
+        })
+        .collect();
 
-    result
+    Ok(results)
 }
 
 pub fn load_pending_jobs(conn: &Connection) -> Result<Vec<Job>, Error> {
