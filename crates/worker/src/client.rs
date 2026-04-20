@@ -10,18 +10,30 @@ use reqwest::{
     Response,
     Error,
 };
-use std::time::Duration;
+use std::{sync::LazyLock, time::Duration};
 use tokio::time::sleep;
 use chrono::Utc;
 use uuid::Uuid;
 
-const COORDINATOR_ADDR: &str = "127.0.0.1:8080";
 const MAX_RETRIES: i32 = 3;
+
+static COORDINATOR_ADDR: LazyLock<String> = LazyLock::new(|| {
+    let addr= std::env::var("COORDINATOR_ADDR");
+    match addr {
+        Ok(addr_string) => {
+            addr_string
+        },
+        Err(_) => {
+            log::info!("COORDINATOR_ADDR is not found. Defaulting to localhost:8080");
+            String::from("127.0.0.1:8080")
+        }
+    }
+});
 
 // We let loop forever as it work do work until it connects/registers
 pub async fn register_worker(worker: WorkerRegister) {
     loop {
-        let url = format!("http://{}/api/worker/register", COORDINATOR_ADDR);
+        let url = format!("http://{}/api/worker/register", *COORDINATOR_ADDR);
 
         let client = reqwest::Client::new();
 
@@ -42,7 +54,7 @@ pub async fn register_worker(worker: WorkerRegister) {
 }
 
 pub async fn send_heartbeat(worker_id: Uuid) {
-    let url = format!("http://{}/api/worker/heartbeat", COORDINATOR_ADDR);
+    let url = format!("http://{}/api/worker/heartbeat", *COORDINATOR_ADDR);
 
     let heartbeat = WorkerHeartbeat {
         worker_id,
@@ -65,7 +77,7 @@ pub async fn send_heartbeat(worker_id: Uuid) {
 }
 
 pub async fn get_next_job(worker_id: Uuid) -> Result<Response, Error> {
-    let url = format!("http://{}/api/job/next", COORDINATOR_ADDR);
+    let url = format!("http://{}/api/job/next", *COORDINATOR_ADDR);
 
     let client = reqwest::Client::new();
 
@@ -83,7 +95,7 @@ pub async fn get_next_job(worker_id: Uuid) -> Result<Response, Error> {
 // Only loop 3 times (Or what MAX_RETRIES is set to) then we can assume coordinator is offline or networking error and log the job_id w/result
 pub async fn post_job_results(results: JobResult, job_id: Uuid) {
     for i in 1..=MAX_RETRIES {
-        let url = format!("http://{}/api/job/{}/results", COORDINATOR_ADDR, job_id);
+        let url = format!("http://{}/api/job/{}/results", *COORDINATOR_ADDR, job_id);
 
         let client = reqwest::Client::new();
 

@@ -6,9 +6,7 @@ use actix_web::{
     web
 };
 use std::{
-    time::Duration,
-    io::Result, 
-    sync::Arc,
+    io::Result, sync::{Arc, LazyLock}, time::Duration
 };
 use tokio::{
     sync::Mutex, 
@@ -19,6 +17,19 @@ use rusqlite::Connection;
 use crate::queue::JobQueue;
 
 mod api; mod queue; mod db; mod metrics;
+
+static COORDINATOR_ADDR: LazyLock<String> = LazyLock::new(|| {
+    let addr= std::env::var("COORDINATOR_ADDR");
+    match addr {
+        Ok(addr_string) => {
+            addr_string
+        },
+        Err(_) => {
+            log::info!("COORDINATOR_ADDR is not found. Defaulting to localhost:8080");
+            String::from("127.0.0.1:8080")
+        }
+    }
+});
 
 #[actix_web::main]
 async fn main() -> Result<()> {
@@ -94,7 +105,7 @@ async fn main() -> Result<()> {
                     )
             )
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(&*COORDINATOR_ADDR)?
     .run()
     .await?;
 

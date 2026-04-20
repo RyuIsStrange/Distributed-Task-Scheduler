@@ -1,4 +1,5 @@
 /target
+.env*
 
 # Ignore the mockup
 project_mockup.*

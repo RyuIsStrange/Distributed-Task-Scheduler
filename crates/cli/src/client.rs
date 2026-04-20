@@ -1,13 +1,26 @@
 use common::{job::JobStatus, message::{ErrorMessage, GetJobListResponse, GetJobStatusResponse, SubmitJobListRequest, SubmitJobRequest}};
 use reqwest::{Response, StatusCode};
+use std::sync::LazyLock;
 
-const COORDINATOR_ADDR: &str = "127.0.0.1:8080";
 const TOO_MANY_REQUESTS: &str = "Slow down too many requests have been sent recently.";
 const PARSE_ERROR_STRING: &str = "Unknown message from server.";
 const FAILED_REQUEST_STRING: &str = "Failed to send request to server.";
 
+static COORDINATOR_ADDR: LazyLock<String> = LazyLock::new(|| {
+    let addr= std::env::var("COORDINATOR_ADDR");
+    match addr {
+        Ok(addr_string) => {
+            addr_string
+        },
+        Err(_) => {
+            println!("COORDINATOR_ADDR is not found. Defaulting to localhost:8080");
+            String::from("127.0.0.1:8080")
+        }
+    }
+});
+
 pub async fn submit_job(submit_request: SubmitJobRequest) -> Result<Response, ErrorMessage> {
-    let url = format!("http://{}/api/job", COORDINATOR_ADDR);
+    let url = format!("http://{}/api/job", *COORDINATOR_ADDR);
 
     let client = reqwest::Client::new();
 
@@ -30,7 +43,7 @@ pub async fn submit_job(submit_request: SubmitJobRequest) -> Result<Response, Er
 }
 
 pub async fn fetch_status(id: String) -> Result<GetJobStatusResponse, ErrorMessage> {
-    let url = format!("http://{}/api/job/{}", COORDINATOR_ADDR, id);
+    let url = format!("http://{}/api/job/{}", *COORDINATOR_ADDR, id);
 
     match reqwest::get(&url).await {
         Ok(response) => {
@@ -53,7 +66,7 @@ pub async fn fetch_status(id: String) -> Result<GetJobStatusResponse, ErrorMessa
 }
 
 pub async fn fetch_list(status_search: Option<JobStatus>) -> Result<GetJobListResponse, ErrorMessage> {
-    let url = format!("http://{}/api/job/list", COORDINATOR_ADDR);
+    let url = format!("http://{}/api/job/list", *COORDINATOR_ADDR);
 
     let client = reqwest::Client::new();
 
