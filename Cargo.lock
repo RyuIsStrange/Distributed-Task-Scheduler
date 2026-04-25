@@ -464,6 +464,7 @@ dependencies = [
  "clap",
  "colored",
  "common",
+ "dotenvy",
  "reqwest 0.13.1",
  "serde_json",
  "tokio",
@@ -523,6 +524,7 @@ dependencies = [
  "chrono",
  "common",
  "cron",
+ "dotenvy",
  "env_logger",
  "log",
  "prometheus",
@@ -650,6 +652,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "dotenvy"
+version = "0.15.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 
 [[package]]
 name = "encoding_rs"
@@ -2776,6 +2784,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "common",
+ "dotenvy",
  "env_logger",
  "hostname",
  "log",

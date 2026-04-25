@@ -19,6 +19,8 @@ use crate::queue::JobQueue;
 mod api; mod queue; mod db; mod metrics;
 
 static COORDINATOR_ADDR: LazyLock<String> = LazyLock::new(|| {
+    dotenvy::dotenv().ok();
+    
     let addr= std::env::var("COORDINATOR_ADDR");
     match addr {
         Ok(addr_string) => {

@@ -17,6 +17,8 @@ const HEARTBEAT_INTERVAL: u64 = 10;
 
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().ok();
+    
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     let hostname = hostname::get().unwrap_or_default().to_string_lossy().to_string();

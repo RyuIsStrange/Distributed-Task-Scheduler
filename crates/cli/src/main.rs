@@ -48,6 +48,8 @@ enum Commands {
 
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().ok();
+
     let cli = Cli::parse();
 
     match cli.command {
