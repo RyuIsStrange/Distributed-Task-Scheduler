@@ -45,9 +45,7 @@ I started this project ~1/5/26 and I am still working on this today.
 - Chrono for life times of workers/ect.
 
 ## What am I working on?
-CLI & DB Error Handling - Make errors easier for CLI clients to read, and make DB error less likely to malform or corrupt the DB. 
-
-^ General Error fixes - This will be more of what limitations/deadlocks could the system encounter.
+Integration Tests - Writing end-to-end tests to verify the full system works correctly together.
 
 ## What Works
 
@@ -89,5 +87,3 @@ CLI & DB Error Handling - Make errors easier for CLI clients to read, and make D
 - Prometheus-compatible /metrics endpoint exposed at the root level
 - Six Prometheus metrics covering job submission, completion, failure, queue depth, worker count, and dependency-blocked jobs — all labeled by priority where applicable
 - Worker and internal endpoints are excluded from rate limiting to ensure uninterrupted metric collection
-
-### Whats next?
