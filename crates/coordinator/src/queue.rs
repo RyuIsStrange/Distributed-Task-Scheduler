@@ -87,6 +87,10 @@ impl JobQueue {
 
     // Worker Functions
 
+    pub fn is_worker_registered(&self, worker_id: Uuid) -> bool {
+        self.workers.contains_key(&worker_id)
+    }
+
     pub fn register_worker(&mut self, info: WorkerInfo) {
         metrics::ACTIVE_WORKERS.inc();
 

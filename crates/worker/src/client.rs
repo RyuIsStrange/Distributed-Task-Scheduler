@@ -7,8 +7,7 @@ use common::{
     job::JobResult
 };
 use reqwest::{
-    Response,
-    Error,
+    Error, Response, StatusCode
 };
 use std::{sync::LazyLock, time::Duration};
 use tokio::time::sleep;
@@ -53,7 +52,7 @@ pub async fn register_worker(worker: WorkerRegister) {
     }
 }
 
-pub async fn send_heartbeat(worker_id: Uuid) {
+pub async fn send_heartbeat(worker_id: Uuid, worker: &WorkerRegister) {
     let url = format!("http://{}/api/worker/heartbeat", *COORDINATOR_ADDR);
 
     let heartbeat = WorkerHeartbeat {
@@ -69,7 +68,12 @@ pub async fn send_heartbeat(worker_id: Uuid) {
         .send()
         .await 
         {
-        Ok(_) => {/* Do nothing as heartbeat got sent */},
+        Ok(response) => {
+            if response.status() == StatusCode::NOT_FOUND {
+                log::info!("Detected that worker isn't connected to coordinator. Re-regestering.");
+                register_worker(worker.clone()).await;
+            }
+        },
         Err(_) => {
             log::error!("Failed to send heartbeat to coordinator")
         }

@@ -24,13 +24,13 @@ async fn main() {
 
     let worker = WorkerRegister {worker_id, hostname: hostname.clone()};
 
-    client::register_worker(worker).await;
+    client::register_worker(worker.clone()).await;
 
     log::info!("Registered with coordinator with ID {} and hostname {}", worker_id, hostname);
 
     tokio::spawn(async move {
         loop {
-            client::send_heartbeat(worker_id).await;
+            client::send_heartbeat(worker_id, &worker).await;
             sleep(Duration::from_secs(HEARTBEAT_INTERVAL)).await;
         }
     });

@@ -90,8 +90,13 @@ pub async fn worker_heartbeat(
 ) -> impl Responder {
     let mut q = queue.lock().await;
 
-    JobQueue::update_worker_heartbeat(&mut q, req.clone());
-    HttpResponse::Ok().finish()
+    if JobQueue::is_worker_registered(&q, req.worker_id) {
+        JobQueue::update_worker_heartbeat(&mut q, req.clone());
+        HttpResponse::Ok().finish()
+    } else {
+        HttpResponse::NotFound().json(ErrorMessage::new(String::from("404"), String::from("Worker not registered.")))
+    }
+    
 }
 
 pub async fn next_job(
