@@ -550,6 +550,7 @@ dependencies = [
  "cron",
  "dotenvy",
  "env_logger",
+ "hostname",
  "log",
  "prometheus",
  "rusqlite",

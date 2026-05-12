@@ -12,6 +12,8 @@ use tokio::sync::Mutex;
 use coordinator::{api, db};
 use coordinator::queue::JobQueue;
 
+// We allow dead code here as we dont actually call this anywhere outside of tests as such rust views it as dead code
+#[allow(dead_code)]
 pub async fn setup_tests() -> (impl Service<Request, Response = ServiceResponse<BoxBody>, Error = Error>, NamedTempFile) {
     let tempfile = NamedTempFile::new().unwrap();
     let db_path = tempfile.path().to_string_lossy().into_owned();
@@ -26,7 +28,7 @@ pub async fn setup_tests() -> (impl Service<Request, Response = ServiceResponse<
 
     let queue = Arc::new(Mutex::new(JobQueue::new(&db_path)));  
 
-    (test::init_service(
+    let test_api = test::init_service(
         App::new()
             .app_data(web::Data::new(queue.clone()))
             .service(
@@ -49,6 +51,7 @@ pub async fn setup_tests() -> (impl Service<Request, Response = ServiceResponse<
                             .route("/job/{job_id}", web::get().to(api::job_details))
                     )
             )
-    ).await,
-    tempfile)
+        ).await;
+
+    (test_api, tempfile)
 }
