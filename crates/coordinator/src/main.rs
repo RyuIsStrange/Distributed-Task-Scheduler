@@ -14,9 +14,7 @@ use tokio::{
 };
 use rusqlite::Connection;
 
-use crate::queue::JobQueue;
-
-mod api; mod queue; mod db; mod metrics;
+use coordinator::{api, db, queue::JobQueue};
 
 static COORDINATOR_ADDR: LazyLock<String> = LazyLock::new(|| {
     dotenvy::dotenv().ok();
@@ -38,7 +36,8 @@ async fn main() -> Result<()> {
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     log::info!("Initalizing database..");
-    let db_connection = Connection::open("scheduler.db").unwrap();
+    let db_name = "scheduler.db";
+    let db_connection = Connection::open(db_name).unwrap();
     let _ = db::init(&db_connection);
 
     let db_close = db_connection.close();
@@ -46,7 +45,7 @@ async fn main() -> Result<()> {
         log::error!("The DB connection failed to close after initialization");
     }
 
-    let queue = Arc::new(Mutex::new(JobQueue::new()));
+    let queue = Arc::new(Mutex::new(JobQueue::new(db_name)));
     
     let checker_queue = queue.clone();
     tokio::spawn(async move {
