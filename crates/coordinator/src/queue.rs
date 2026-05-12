@@ -39,7 +39,7 @@ pub struct JobQueue {
 }
 
 impl JobQueue {
-    pub fn new() -> Self {
+    pub fn new(db_name: &str) -> Self {
         let mut queue = JobQueue {
             jobs: HashMap::new(), 
             schedules: HashMap::new(),
@@ -50,7 +50,7 @@ impl JobQueue {
             pending_low: VecDeque::new(),
 
             workers: HashMap::new(),
-            connection: Connection::open("scheduler.db").unwrap_or_else(|e| {
+            connection: Connection::open(db_name).unwrap_or_else(|e| {
                 log::error!("DB Error: Failed to open database, exiting program.\n Error: {}", e); 
                 exit(1); 
             })
