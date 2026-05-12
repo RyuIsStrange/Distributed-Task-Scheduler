@@ -10,7 +10,7 @@ I put production ready in quotes as I am sure there are many things within this 
 
 However with this I have learned many things such as message design, database integration, job persistence and state management, and more.
 
-I started this project ~1/5/26 and I am still working on this today.
+I started this project ~1/5/26 and I finished it on 5/12/26. I could have finished it faster but I took breaks while working on this.
 
 ## Technology Used
 **Backend/Coordinator:**
@@ -43,9 +43,6 @@ I started this project ~1/5/26 and I am still working on this today.
 - Cron as a whole.
 - Clap for CLI commands.
 - Chrono for life times of workers/ect.
-
-## What am I working on?
-Integration Tests - Writing end-to-end tests to verify the full system works correctly together.
 
 ## What Works
 
