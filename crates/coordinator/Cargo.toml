@@ -18,3 +18,8 @@ cron = "0.12"
 actix-governor = "0.10.0"
 prometheus = "0.14.0"
 dotenvy = "0.15.7"
+
+[dev-dependencies]
+tempfile = "3.27.0"
+actix-web = { version = "4.12.1", features = ["macros"]}
+actix-http = "3.12.1"
